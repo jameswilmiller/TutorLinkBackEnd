@@ -1,4 +1,4 @@
-    package com.tl.tutor_link.service;
+package com.tl.tutor_link.service;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -54,6 +54,7 @@ public class JwtService {
         return Jwts
                 .builder()
                 .claims(extraClaims)
+                .subject(userDetails.getUsername())
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSignInKey())

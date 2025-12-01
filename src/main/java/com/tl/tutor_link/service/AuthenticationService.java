@@ -3,6 +3,7 @@ package com.tl.tutor_link.service;
 import com.tl.tutor_link.dto.LoginUserDto;
 import com.tl.tutor_link.dto.RegisterUserDto;
 import com.tl.tutor_link.dto.VerifyUserDto;
+import com.tl.tutor_link.model.Role;
 import com.tl.tutor_link.model.User;
 import com.tl.tutor_link.repository.UserRepository;
 import jakarta.mail.MessagingException;
@@ -38,6 +39,7 @@ public class AuthenticationService {
         user.setVerificationCode(generateVerificationCode());
         user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
         user.setEnabled(false);
+        user.getRoles().add(Role.STUDENT);
         sendVerificationEmail(user);
         return userRepository.save(user);
     }
