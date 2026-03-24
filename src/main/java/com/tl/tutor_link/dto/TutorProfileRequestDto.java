@@ -11,5 +11,7 @@ public class TutorProfileRequestDto {
     private String location;
     private boolean remote;
     private Integer hourlyRate;
-
+    private String profileImageKey;
+    private Double longitude;
+    private Double latitude;
 }

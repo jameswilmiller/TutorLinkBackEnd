@@ -32,11 +32,13 @@ public class SecurityConfiguration {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                .cors(cors -> {})
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/tutors/me/**").hasRole("TUTOR")
                         .requestMatchers("/tutors", "/tutors/*").permitAll()
+                        .requestMatchers("/tutors/search").permitAll()
                         .requestMatchers("/users/me").hasAnyRole("STUDENT", "TUTOR", "ADMIN")
                         .requestMatchers("/users/me/become-tutor").hasAnyRole("STUDENT","TUTOR", "ADMIN")
                         .requestMatchers("/users/**").hasRole("ADMIN")

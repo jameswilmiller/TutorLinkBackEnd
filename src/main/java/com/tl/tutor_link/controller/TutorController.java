@@ -2,12 +2,13 @@ package com.tl.tutor_link.controller;
 
 import com.tl.tutor_link.dto.TutorProfileDto;
 import com.tl.tutor_link.dto.TutorProfileRequestDto;
+import com.tl.tutor_link.dto.TutorSearchRequestDto;
 import com.tl.tutor_link.model.User;
 import com.tl.tutor_link.service.TutorService;
-import org.apache.coyote.Response;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
+
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,6 +34,12 @@ public class TutorController {
         return ResponseEntity.ok(
                 tutorService.createTutorProfile(user, dto)
         );
+    }
+
+    @PostMapping("/search")
+    public ResponseEntity<List<TutorProfileDto>> searchTutors(
+        @RequestBody TutorSearchRequestDto request) {
+        return ResponseEntity.ok(tutorService.searchTutors(request));
     }
 
     @GetMapping("/me/profile")

@@ -10,6 +10,8 @@ import java.util.Set;
 @Setter
 public class UserProfileDto {
     private long id;
+    private String firstname;
+    private String lastname;
     private String username;
     private String email;
     private Set<Role> roles;

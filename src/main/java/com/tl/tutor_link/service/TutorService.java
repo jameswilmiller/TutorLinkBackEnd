@@ -1,6 +1,7 @@
 package com.tl.tutor_link.service;
 import com.tl.tutor_link.dto.TutorProfileRequestDto;
 import com.tl.tutor_link.dto.TutorProfileDto;
+import com.tl.tutor_link.dto.TutorSearchRequestDto;
 import com.tl.tutor_link.model.Tutor;
 import com.tl.tutor_link.model.User;
 import com.tl.tutor_link.repository.TutorRepository;
@@ -29,7 +30,9 @@ public class TutorService {
         tutor.setLocation(dto.getLocation());
         tutor.setRemote(dto.isRemote());
         tutor.setHourlyRate(dto.getHourlyRate());
-
+        tutor.setProfileImageKey(dto.getProfileImageKey());
+        tutor.setLongitude(dto.getLongitude());
+        tutor.setLatitude(dto.getLatitude());
         Tutor savedTutor = tutorRepository.save(tutor);
         return mapToDto(savedTutor);
     }
@@ -43,7 +46,9 @@ public class TutorService {
         tutor.setLocation(dto.getLocation());
         tutor.setRemote(dto.isRemote());
         tutor.setHourlyRate(dto.getHourlyRate());
-
+        tutor.setProfileImageKey(dto.getProfileImageKey());
+        tutor.setLongitude(dto.getLongitude());
+        tutor.setLatitude(dto.getLatitude());
         Tutor updatedTutor = tutorRepository.save(tutor);
 
         return mapToDto(updatedTutor);
@@ -79,14 +84,82 @@ public class TutorService {
         dto.setId(tutor.getId());
         dto.setUserId(tutor.getUser().getId());
         dto.setUsername(tutor.getUser().getDisplayUsername());
-
+        dto.setFirstname(tutor.getUser().getFirstname());
+        dto.setLastname(tutor.getUser().getLastname());
 
         dto.setBio(tutor.getBio());
         dto.setSubjects(tutor.getSubjects());
         dto.setLocation(tutor.getLocation());
         dto.setRemote(tutor.isRemote());
         dto.setHourlyRate(tutor.getHourlyRate());
-
+        dto.setProfileImageKey(tutor.getProfileImageKey());
+        dto.setLongitude(tutor.getLongitude());
+        dto.setLatitude(tutor.getLatitude());
         return dto;
+    }
+
+    public List<TutorProfileDto> searchTutors(TutorSearchRequestDto request) {
+        final double MAX_DIST_KM = 20.0;
+
+        return tutorRepository.findAll().
+                stream()
+                .filter(tutor -> matchesSubject(tutor, request.getSubject()))
+                .filter(tutor -> matchesDistance(tutor, request, MAX_DIST_KM))
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
+    private boolean matchesSubject(Tutor tutor, String subject) {
+        if (subject == null || subject.isBlank()) return true;
+
+        if (tutor.getSubjects() == null) return false;
+
+        return tutor.getSubjects().toLowerCase().contains(subject.toLowerCase());
+    }
+
+    private boolean matchesDistance(
+            Tutor tutor,
+            TutorSearchRequestDto request,
+            double maxDistanceKm
+    ) {
+        //make sure to always include remote tutors
+        if (tutor.isRemote()) return true;
+
+        if (request.getLatitude() == null || request.getLongitude() == null) {
+            return true;
+        }
+        if (tutor.getLatitude() == null || tutor.getLongitude() == null) {
+            return false;
+        }
+
+        double distance = calculateDistanceKm(
+                request.getLatitude(),
+                request.getLongitude(),
+                tutor.getLatitude(),
+                tutor.getLongitude()
+        );
+        return distance <= maxDistanceKm;
+    }
+
+    private double calculateDistanceKm(
+            double lat1,
+            double lng1,
+            double lat2,
+            double lng2) {
+        final double EARTH_RADIUS = 6731.0;
+
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1))
+                * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLng / 2)
+                * Math.sin(dLng / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+        return EARTH_RADIUS * c;
+
+
     }
 }
