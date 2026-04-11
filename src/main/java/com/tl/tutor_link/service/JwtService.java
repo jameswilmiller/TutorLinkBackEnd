@@ -20,7 +20,7 @@ public class JwtService {
     private String secretKey;
     @Value("${security.jwt.expiration-time}")
     private long accessTokenExpiration;
-    @Value("$security.jwt.refresh-token-expiration")
+    @Value("${security.jwt.refresh-token-expiration}")
     private long refreshTokenExpiration;
 
 
@@ -31,6 +31,12 @@ public class JwtService {
     public String generateAccessToken(Map<String, Object> extraClaims, UserDetails userDetails) {
         extraClaims.put("tokenType", "access");
         return buildToken(extraClaims, userDetails, accessTokenExpiration);
+    }
+
+    public String generateRefreshToken(UserDetails userDetails) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("tokenType", "refresh");
+        return buildToken(claims, userDetails, refreshTokenExpiration);
     }
 
     public String buildToken(
