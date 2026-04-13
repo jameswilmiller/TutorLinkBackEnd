@@ -4,7 +4,6 @@
 
 The backend is under active development and currently serves as the primary implementation of the TutorLink system. Core functionality, including authentication, user management, tutor profile management, and token-based session handling, has been implemented. Additional features such as bookings, payments, and production deployment are planned for future iterations.
 
----
 
 ## Overview
 
