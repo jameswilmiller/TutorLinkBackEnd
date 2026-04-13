@@ -231,8 +231,15 @@ security.jwt.refresh-token-expiration=604800000
 ```
 #### generating a secret key
 generate a secure random key:
+Linux / macOS:
 ```bash
 openssl rand -base64 32
+```
+Windows
+```bash
+$bytes = New-Object byte[] 32
+[System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+[Convert]::ToBase64String($bytes)
 ```
 this key must remain private and should not be committed to source control
 
@@ -256,4 +263,27 @@ To use GMail as the SMTP provider
 A standard Gmail account password will not work
 
 ### CORS Configuration
+The backend must allow requests from the frontend origin.
 
+CORS configuration is defined within the security configuration and controlled via application properties.
+
+Example:
+```properties
+app.cors.allowed-origins=https://frontendorigin.com or http://localhost:5173 for local development
+```
+
+### Running the Application
+start the backend using:
+```
+./gradlew bootRun
+```
+the API will be available at:
+
+```http://localhost:8080```
+
+To test full functionality of TutorLink navigate to https://github.com/jameswilmiller/TutorLinkFrontEnd/blob/main/README.md and follow setup instructions 
+
+## Author 
+James Miller
+
+For questions or collaboration, contact: jameswil.miller@gmail.com
