@@ -198,11 +198,62 @@ Sensitive values should be externalised i.e in an env file and not committed to 
 
 ## Local Development
 ### pre-requisites
-- Java
+ensure the following are installed
+
+- Java 25
 - Gradle
 - PostgreSQL
-  
-#### Run the Application
-``` ./gradlew bootRun ```
-The API will be available on the configured port (default: 8080).
-during my development I have been hitting the endpoints using Postman
+
+Clone the repository:
+
+```bash
+git clone https://github.com/jameswilmiller/TutorLinkBackEnd.git
+cd TutorLinkBackEnd
+```
+### Database Configuration
+A PostgreSQL database must be available and reachable by the application before startup. Local and cloud-hosted deployments are both supported.
+
+update the following properties in  ```application.properties```:
+
+```
+spring.datasource.url=jdbc:postgresql://<host>:<port>/<database_name> 
+spring.datasource.username=your_username
+spring.datasource.password=your_password
+spring.jpa.hibernate.ddl-auto=update
+```
+
+### JWT Configuration
+JWT properties are required for authentication and token generation
+```
+security.jwt.secret-key=your_secret_key
+security.jwt.expiration-time=3600000
+security.jwt.refresh-token-expiration=604800000
+```
+#### generating a secret key
+generate a secure random key:
+```bash
+openssl rand -base64 32
+```
+this key must remain private and should not be committed to source control
+
+### Email Service (SMTP)
+The backend uses SMTP to send account verification emails
+
+GMail SMTP can be used via an App password
+```
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=your_email@gmail.com
+spring.mail.password=your_app_password
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+```
+#### GMail setup
+To use GMail as the SMTP provider
+- enable 2-step verification on the google account
+- generate an App password
+- use the app password as spring.mail.password
+A standard Gmail account password will not work
+
+### CORS Configuration
+
