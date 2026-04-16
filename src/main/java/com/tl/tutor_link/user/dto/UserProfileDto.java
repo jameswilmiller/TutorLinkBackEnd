@@ -1,6 +1,6 @@
-package com.tl.tutor_link.dto;
+package com.tl.tutor_link.user.dto;
 
-import com.tl.tutor_link.model.Role;
+import com.tl.tutor_link.user.model.Role;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,6 +9,7 @@ import java.util.Set;
 @Getter
 @Setter
 public class UserProfileDto {
+
     private long id;
     private String firstname;
     private String lastname;

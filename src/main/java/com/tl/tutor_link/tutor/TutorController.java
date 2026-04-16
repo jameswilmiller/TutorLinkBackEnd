@@ -1,10 +1,9 @@
-package com.tl.tutor_link.controller;
+package com.tl.tutor_link.tutor;
 
 import com.tl.tutor_link.dto.TutorProfileDto;
 import com.tl.tutor_link.dto.TutorProfileRequestDto;
 import com.tl.tutor_link.dto.TutorSearchRequestDto;
-import com.tl.tutor_link.model.User;
-import com.tl.tutor_link.service.TutorService;
+import com.tl.tutor_link.user.model.User;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;

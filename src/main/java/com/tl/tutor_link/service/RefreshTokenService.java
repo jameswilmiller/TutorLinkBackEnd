@@ -1,7 +1,7 @@
 package com.tl.tutor_link.service;
 
 import com.tl.tutor_link.model.RefreshToken;
-import com.tl.tutor_link.model.User;
+import com.tl.tutor_link.user.model.User;
 import com.tl.tutor_link.repository.RefreshTokenRepository;
 import org.springframework.stereotype.Service;
 

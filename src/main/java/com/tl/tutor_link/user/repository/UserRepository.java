@@ -1,5 +1,5 @@
-package com.tl.tutor_link.repository;
-import com.tl.tutor_link.model.User;
+package com.tl.tutor_link.user.repository;
+import com.tl.tutor_link.user.model.User;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 

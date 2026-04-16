@@ -1,6 +1,6 @@
 package com.tl.tutor_link.config;
 
-import com.tl.tutor_link.repository.UserRepository;
+import com.tl.tutor_link.user.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;

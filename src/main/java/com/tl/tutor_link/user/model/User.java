@@ -1,4 +1,4 @@
-package com.tl.tutor_link.model;
+package com.tl.tutor_link.user.model;
 import jakarta.persistence.*;
 import lombok.Setter;
 import lombok.Getter;
@@ -10,11 +10,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import com.tl.tutor_link.model.Role;
 
 @Entity
 @Table(name = "users")

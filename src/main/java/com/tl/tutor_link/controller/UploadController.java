@@ -1,6 +1,6 @@
 package com.tl.tutor_link.controller;
 
-import com.tl.tutor_link.model.User;
+import com.tl.tutor_link.user.model.User;
 import com.tl.tutor_link.service.ImageUploadService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;

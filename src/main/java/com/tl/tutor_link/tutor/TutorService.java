@@ -1,9 +1,9 @@
-package com.tl.tutor_link.service;
+package com.tl.tutor_link.tutor;
 import com.tl.tutor_link.dto.TutorProfileRequestDto;
 import com.tl.tutor_link.dto.TutorProfileDto;
 import com.tl.tutor_link.dto.TutorSearchRequestDto;
 import com.tl.tutor_link.model.Tutor;
-import com.tl.tutor_link.model.User;
+import com.tl.tutor_link.user.model.User;
 import com.tl.tutor_link.repository.TutorRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
