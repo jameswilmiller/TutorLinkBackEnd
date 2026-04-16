@@ -24,6 +24,14 @@ public class TutorController {
 
     }
 
+    @PutMapping("/me/profile")
+    public ResponseEntity<TutorProfileDto> updateTutorProfile(
+            @RequestBody TutorProfileRequestDto dto) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = (User) authentication.getPrincipal();
+
+        return ResponseEntity.ok(tutorService.updateTutorProfile(user, dto));
+    }
     @PostMapping("/me/profile")
     public ResponseEntity<TutorProfileDto> createTutorProfile(
             @RequestBody TutorProfileRequestDto dto

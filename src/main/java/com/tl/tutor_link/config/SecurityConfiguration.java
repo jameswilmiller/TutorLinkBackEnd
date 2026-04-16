@@ -42,6 +42,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/users/me").hasAnyRole("STUDENT", "TUTOR", "ADMIN")
                         .requestMatchers("/users/me/become-tutor").hasAnyRole("STUDENT","TUTOR", "ADMIN")
                         .requestMatchers("/users/**").hasRole("ADMIN")
+                        .requestMatchers("/upload/**").hasAnyRole("STUDENT","TUTOR","ADMIN")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
