@@ -1,7 +1,7 @@
 package com.tl.tutor_link.tutor.mapper;
 
-import com.tl.tutor_link.dto.TutorProfileDto;
-import com.tl.tutor_link.model.Tutor;
+import com.tl.tutor_link.tutor.dto.TutorProfileDto;
+import com.tl.tutor_link.tutor.model.Tutor;
 import org.springframework.stereotype.Component;
 
 /**

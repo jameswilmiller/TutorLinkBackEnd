@@ -1,21 +1,25 @@
-package com.tl.tutor_link.tutor;
-import com.tl.tutor_link.dto.TutorProfileRequestDto;
-import com.tl.tutor_link.dto.TutorProfileDto;
-import com.tl.tutor_link.dto.TutorSearchRequestDto;
-import com.tl.tutor_link.model.Tutor;
+package com.tl.tutor_link.tutor.service;
+import com.tl.tutor_link.tutor.dto.TutorProfileRequestDto;
+import com.tl.tutor_link.tutor.dto.TutorProfileDto;
+import com.tl.tutor_link.tutor.dto.TutorSearchRequestDto;
+import com.tl.tutor_link.tutor.mapper.TutorMapper;
+import com.tl.tutor_link.tutor.model.Tutor;
 import com.tl.tutor_link.user.model.User;
-import com.tl.tutor_link.repository.TutorRepository;
+import com.tl.tutor_link.tutor.repository.TutorRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
-import java.util.stream.Collectors;
+
 
 @Service
 public class TutorService {
+    private static final double MAX_DISTANCE_KM = 20.0;
+    private static final double EARTH_RADIUS_KM = 6371.0;
 
     private final TutorRepository tutorRepository;
-
-    public TutorService(TutorRepository tutorRepository) {
+    private final TutorMapper tutorMapper;
+    public TutorService(TutorRepository tutorRepository, TutorMapper tutorMapper) {
         this.tutorRepository = tutorRepository;
+        this.tutorMapper = tutorMapper;
     }
 
     public TutorProfileDto createTutorProfile(User user, TutorProfileRequestDto dto) {
@@ -25,33 +29,19 @@ public class TutorService {
 
         Tutor tutor = new Tutor();
         tutor.setUser(user);
-        tutor.setBio(dto.getBio());
-        tutor.setSubjects(dto.getSubjects());
-        tutor.setLocation(dto.getLocation());
-        tutor.setRemote(dto.isRemote());
-        tutor.setHourlyRate(dto.getHourlyRate());
-        tutor.setProfileImageKey(dto.getProfileImageKey());
-        tutor.setLongitude(dto.getLongitude());
-        tutor.setLatitude(dto.getLatitude());
+        applyProfileUpdates(tutor, dto);
+
         Tutor savedTutor = tutorRepository.save(tutor);
-        return mapToDto(savedTutor);
+        return tutorMapper.toDto(savedTutor);
     }
 
     public TutorProfileDto updateTutorProfile(User user, TutorProfileRequestDto dto) {
         Tutor tutor = tutorRepository.findByUser(user)
                 .orElseThrow(() -> new RuntimeException("Tutor profile could not be found"));
 
-        tutor.setBio(dto.getBio());
-        tutor.setSubjects(dto.getSubjects());
-        tutor.setLocation(dto.getLocation());
-        tutor.setRemote(dto.isRemote());
-        tutor.setHourlyRate(dto.getHourlyRate());
-        tutor.setProfileImageKey(dto.getProfileImageKey());
-        tutor.setLongitude(dto.getLongitude());
-        tutor.setLatitude(dto.getLatitude());
-        Tutor updatedTutor = tutorRepository.save(tutor);
-
-        return mapToDto(updatedTutor);
+        applyProfileUpdates(tutor, dto);
+        Tutor savedTutor = tutorRepository.save(tutor);
+        return tutorMapper.toDto(savedTutor);
     }
 
     public TutorProfileDto getMyTutorProfile(User user) {
@@ -59,15 +49,15 @@ public class TutorService {
         Tutor tutor = tutorRepository.findByUser(user)
                 .orElseThrow(() -> new RuntimeException("Tutor Profile could not be found"));
 
-        return mapToDto(tutor);
+        return tutorMapper.toDto(tutor);
 
     }
 
     public List<TutorProfileDto> getTutors() {
         return tutorRepository.findAll()
                 .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+                .map(tutorMapper::toDto)
+                .toList();
     }
 
     public TutorProfileDto getTutorById(Long id) {
@@ -75,28 +65,9 @@ public class TutorService {
         Tutor tutor = tutorRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Tutor could not be found"));
 
-        return mapToDto(tutor);
+        return tutorMapper.toDto(tutor);
     }
 
-    private TutorProfileDto mapToDto(Tutor tutor) {
-        TutorProfileDto dto = new TutorProfileDto();
-
-        dto.setId(tutor.getId());
-        dto.setUserId(tutor.getUser().getId());
-        dto.setUsername(tutor.getUser().getDisplayUsername());
-        dto.setFirstname(tutor.getUser().getFirstname());
-        dto.setLastname(tutor.getUser().getLastname());
-
-        dto.setBio(tutor.getBio());
-        dto.setSubjects(tutor.getSubjects());
-        dto.setLocation(tutor.getLocation());
-        dto.setRemote(tutor.isRemote());
-        dto.setHourlyRate(tutor.getHourlyRate());
-        dto.setProfileImageKey(tutor.getProfileImageKey());
-        dto.setLongitude(tutor.getLongitude());
-        dto.setLatitude(tutor.getLatitude());
-        return dto;
-    }
 
     public List<TutorProfileDto> searchTutors(TutorSearchRequestDto request) {
         final double MAX_DIST_KM = 20.0;
@@ -105,15 +76,24 @@ public class TutorService {
                 stream()
                 .filter(tutor -> matchesSubject(tutor, request.getSubject()))
                 .filter(tutor -> matchesDistance(tutor, request, MAX_DIST_KM))
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+                .map(tutorMapper::toDto)
+                .toList();
+    }
+
+    private void applyProfileUpdates(Tutor tutor, TutorProfileRequestDto dto) {
+        tutor.setBio(dto.getBio());
+        tutor.setSubjects(dto.getSubjects());
+        tutor.setLocation(dto.getLocation());
+        tutor.setRemote(dto.isRemote());
+        tutor.setHourlyRate(dto.getHourlyRate());
+        tutor.setProfileImageKey(dto.getProfileImageKey());
+        tutor.setLongitude(dto.getLongitude());
+        tutor.setLatitude(dto.getLatitude());
     }
 
     private boolean matchesSubject(Tutor tutor, String subject) {
         if (subject == null || subject.isBlank()) return true;
-
         if (tutor.getSubjects() == null) return false;
-
         return tutor.getSubjects().toLowerCase().contains(subject.toLowerCase());
     }
 
@@ -122,15 +102,10 @@ public class TutorService {
             TutorSearchRequestDto request,
             double maxDistanceKm
     ) {
-        //make sure to always include remote tutors
-        if (tutor.isRemote()) return true;
 
-        if (request.getLatitude() == null || request.getLongitude() == null) {
-            return true;
-        }
-        if (tutor.getLatitude() == null || tutor.getLongitude() == null) {
-            return false;
-        }
+        if (tutor.isRemote()) return true;
+        if (request.getLatitude() == null || request.getLongitude() == null) return true;
+        if (tutor.getLatitude() == null || tutor.getLongitude() == null) return false;
 
         double distance = calculateDistanceKm(
                 request.getLatitude(),
@@ -146,8 +121,6 @@ public class TutorService {
             double lng1,
             double lat2,
             double lng2) {
-        final double EARTH_RADIUS = 6731.0;
-
         double dLat = Math.toRadians(lat2 - lat1);
         double dLng = Math.toRadians(lng2 - lng1);
 
@@ -158,7 +131,7 @@ public class TutorService {
                 * Math.sin(dLng / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 
-        return EARTH_RADIUS * c;
+        return EARTH_RADIUS_KM * c;
 
 
     }

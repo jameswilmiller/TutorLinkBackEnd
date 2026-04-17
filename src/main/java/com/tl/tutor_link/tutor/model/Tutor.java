@@ -1,4 +1,4 @@
-package com.tl.tutor_link.model;
+package com.tl.tutor_link.tutor.model;
 
 import com.tl.tutor_link.user.model.User;
 import jakarta.persistence.*;

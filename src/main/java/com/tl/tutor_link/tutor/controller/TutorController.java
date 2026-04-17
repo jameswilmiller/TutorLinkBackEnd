@@ -1,18 +1,23 @@
-package com.tl.tutor_link.tutor;
+package com.tl.tutor_link.tutor.controller;
 
-import com.tl.tutor_link.dto.TutorProfileDto;
-import com.tl.tutor_link.dto.TutorProfileRequestDto;
-import com.tl.tutor_link.dto.TutorSearchRequestDto;
+import com.tl.tutor_link.tutor.dto.TutorProfileDto;
+import com.tl.tutor_link.tutor.dto.TutorProfileRequestDto;
+import com.tl.tutor_link.tutor.dto.TutorSearchRequestDto;
+import com.tl.tutor_link.tutor.service.TutorService;
 import com.tl.tutor_link.user.model.User;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Handles tutor related endpoints such as tutor profile manage, tutor browsing and tutor search.
+ */
 @RestController
 @RequestMapping("/tutors")
 public class TutorController {
@@ -25,53 +30,36 @@ public class TutorController {
 
     @PutMapping("/me/profile")
     public ResponseEntity<TutorProfileDto> updateTutorProfile(
+            @AuthenticationPrincipal User user,
             @RequestBody TutorProfileRequestDto dto) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User user = (User) authentication.getPrincipal();
-
         return ResponseEntity.ok(tutorService.updateTutorProfile(user, dto));
     }
+
     @PostMapping("/me/profile")
     public ResponseEntity<TutorProfileDto> createTutorProfile(
+            @AuthenticationPrincipal User user,
             @RequestBody TutorProfileRequestDto dto
     ) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User user = (User) authentication.getPrincipal();
-
-        return ResponseEntity.ok(
-                tutorService.createTutorProfile(user, dto)
-        );
+        return ResponseEntity.ok(tutorService.createTutorProfile(user, dto));
     }
 
     @PostMapping("/search")
-    public ResponseEntity<List<TutorProfileDto>> searchTutors(
-        @RequestBody TutorSearchRequestDto request) {
+    public ResponseEntity<List<TutorProfileDto>> searchTutors(@RequestBody TutorSearchRequestDto request) {
         return ResponseEntity.ok(tutorService.searchTutors(request));
     }
 
     @GetMapping("/me/profile")
-    public ResponseEntity<TutorProfileDto> getMyTutorProfile() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User user = (User) authentication.getPrincipal();
-
-        return ResponseEntity.ok(
-                tutorService.getMyTutorProfile(user)
-        );
+    public ResponseEntity<TutorProfileDto> getMyTutorProfile(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(tutorService.getMyTutorProfile(user));
     }
 
     @GetMapping
     public ResponseEntity<List<TutorProfileDto>> getAllTutors() {
-
-        return ResponseEntity.ok(
-                tutorService.getTutors()
-        );
+        return ResponseEntity.ok(tutorService.getTutors());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<TutorProfileDto> getTutorById(@PathVariable Long id) {
-
-        return ResponseEntity.ok(
-                tutorService.getTutorById(id)
-        );
+        return ResponseEntity.ok(tutorService.getTutorById(id));
     }
 }
