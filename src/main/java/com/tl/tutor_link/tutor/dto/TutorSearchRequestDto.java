@@ -6,6 +6,8 @@ import lombok.Setter;
 @Setter
 public class TutorSearchRequestDto {
     private String subject;
+    private String location;
     private Double latitude;
     private Double longitude;
+    private Boolean remote;
 }

@@ -43,8 +43,21 @@ public class TutorController {
         return ResponseEntity.ok(tutorService.createTutorProfile(user, dto));
     }
 
-    @PostMapping("/search")
-    public ResponseEntity<List<TutorProfileDto>> searchTutors(@RequestBody TutorSearchRequestDto request) {
+    @GetMapping
+    public ResponseEntity<List<TutorProfileDto>> getTutors(
+            @RequestParam(required = false) String subject,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) Double latitude,
+            @RequestParam(required = false) Double longitude,
+            @RequestParam(required = false) Boolean remote
+    ) {
+        TutorSearchRequestDto request = new TutorSearchRequestDto();
+        request.setSubject(subject);
+        request.setLocation(location);
+        request.setLatitude(latitude);
+        request.setLongitude(longitude);
+        request.setRemote(remote);
+
         return ResponseEntity.ok(tutorService.searchTutors(request));
     }
 
@@ -53,10 +66,6 @@ public class TutorController {
         return ResponseEntity.ok(tutorService.getMyTutorProfile(user));
     }
 
-    @GetMapping
-    public ResponseEntity<List<TutorProfileDto>> getAllTutors() {
-        return ResponseEntity.ok(tutorService.getTutors());
-    }
 
     @GetMapping("/{id}")
     public ResponseEntity<TutorProfileDto> getTutorById(@PathVariable Long id) {

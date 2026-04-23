@@ -70,12 +70,12 @@ public class TutorService {
 
 
     public List<TutorProfileDto> searchTutors(TutorSearchRequestDto request) {
-        final double MAX_DIST_KM = 20.0;
-
-        return tutorRepository.findAll().
-                stream()
+        return tutorRepository.findAll()
+                .stream()
                 .filter(tutor -> matchesSubject(tutor, request.getSubject()))
-                .filter(tutor -> matchesDistance(tutor, request, MAX_DIST_KM))
+                .filter(tutor -> matchesLocation(tutor, request.getLocation()))
+                .filter(tutor -> matchesRemote(tutor, request.getRemote()))
+                .filter(tutor -> matchesDistance(tutor, request, MAX_DISTANCE_KM))
                 .map(tutorMapper::toDto)
                 .toList();
     }
@@ -91,6 +91,12 @@ public class TutorService {
         tutor.setLatitude(dto.getLatitude());
     }
 
+    private boolean matchesRemote(Tutor tutor, Boolean remote) {
+        if (remote == null) {
+            return true;
+        }
+        return tutor.isRemote() == remote;
+    }
     private boolean matchesSubject(Tutor tutor, String subject) {
         if (subject == null || subject.isBlank()) return true;
         if (tutor.getSubjects() == null) return false;
@@ -114,6 +120,12 @@ public class TutorService {
                 tutor.getLongitude()
         );
         return distance <= maxDistanceKm;
+    }
+
+    private boolean matchesLocation(Tutor tutor, String location) {
+        if (location == null || location.isBlank()) return true;
+        if (tutor.getLocation() == null) return false;
+        return tutor.getLocation().toLowerCase().contains(location.toLowerCase());
     }
 
     private double calculateDistanceKm(
