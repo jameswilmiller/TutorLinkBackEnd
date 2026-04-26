@@ -10,4 +10,5 @@ public class TutorSearchRequestDto {
     private Double latitude;
     private Double longitude;
     private Boolean remote;
+    private String sort;
 }

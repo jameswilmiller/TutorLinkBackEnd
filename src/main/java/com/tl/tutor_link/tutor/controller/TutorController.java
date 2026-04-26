@@ -49,7 +49,8 @@ public class TutorController {
             @RequestParam(required = false) String location,
             @RequestParam(required = false) Double latitude,
             @RequestParam(required = false) Double longitude,
-            @RequestParam(required = false) Boolean remote
+            @RequestParam(required = false) Boolean remote,
+            @RequestParam(defaultValue = "relevance") String sort
     ) {
         TutorSearchRequestDto request = new TutorSearchRequestDto();
         request.setSubject(subject);
@@ -57,6 +58,7 @@ public class TutorController {
         request.setLatitude(latitude);
         request.setLongitude(longitude);
         request.setRemote(remote);
+        request.setSort(sort);
 
         return ResponseEntity.ok(tutorService.searchTutors(request));
     }

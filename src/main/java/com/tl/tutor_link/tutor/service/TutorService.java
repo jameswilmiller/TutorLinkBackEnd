@@ -9,7 +9,7 @@ import com.tl.tutor_link.tutor.repository.TutorRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
 
-
+import org.springframework.data.domain.Sort;
 @Service
 public class TutorService {
     private static final double MAX_DISTANCE_KM = 20.0;
@@ -70,7 +70,9 @@ public class TutorService {
 
 
     public List<TutorProfileDto> searchTutors(TutorSearchRequestDto request) {
-        return tutorRepository.findAll()
+        Sort sort = getSort(request.getSort());
+
+        return tutorRepository.findAll(sort)
                 .stream()
                 .filter(tutor -> matchesSubject(tutor, request.getSubject()))
                 .filter(tutor -> matchesLocation(tutor, request.getLocation()))
@@ -109,9 +111,18 @@ public class TutorService {
             double maxDistanceKm
     ) {
 
-        if (tutor.isRemote()) return true;
-        if (request.getLatitude() == null || request.getLongitude() == null) return true;
-        if (tutor.getLatitude() == null || tutor.getLongitude() == null) return false;
+        if (request.getLatitude() == null || request.getLongitude() == null) {
+            return true;
+        }
+
+        // if user selected remote distance doesnt matter
+        if (Boolean.TRUE.equals(request.getRemote())) {
+            return true;
+        }
+        // if user has any then show remote tutors regardless of location
+        if (request.getRemote() == null && tutor.isRemote()) {
+            return true;
+        }
 
         double distance = calculateDistanceKm(
                 request.getLatitude(),
@@ -144,7 +155,19 @@ public class TutorService {
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 
         return EARTH_RADIUS_KM * c;
-
-
     }
+
+    private Sort getSort(String sort) {
+        if (sort == null || sort.isBlank()) {
+            return Sort.by(Sort.Direction.DESC, "id");
+        }
+
+        return switch (sort) {
+            case "price_low" -> Sort.by(Sort.Direction.ASC, "hourlyRate");
+            case "price_high" -> Sort.by(Sort.Direction.DESC, "hourlyRate");
+            case "newest" -> Sort.by(Sort.Direction.DESC, "id");
+            default -> Sort.by(Sort.Direction.DESC, "id");
+        };
+    }
+
 }
