@@ -1,4 +1,4 @@
-package com.tl.tutor_link.service;
+package com.tl.tutor_link.auth.service;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;

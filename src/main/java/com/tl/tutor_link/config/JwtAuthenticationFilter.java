@@ -1,6 +1,6 @@
 package com.tl.tutor_link.config;
 
-import com.tl.tutor_link.service.JwtService;
+import com.tl.tutor_link.auth.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

@@ -1,6 +1,6 @@
-package com.tl.tutor_link.repository;
+package com.tl.tutor_link.auth.repository;
 
-import com.tl.tutor_link.model.RefreshToken;
+import com.tl.tutor_link.auth.model.RefreshToken;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

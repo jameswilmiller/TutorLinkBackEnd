@@ -1,15 +1,15 @@
-package com.tl.tutor_link.controller;
+package com.tl.tutor_link.auth.controller;
 
-import com.tl.tutor_link.dto.AuthResponseDto;
-import com.tl.tutor_link.dto.LoginUserDto;
-import com.tl.tutor_link.dto.RegisterUserDto;
-import com.tl.tutor_link.dto.VerifyUserDto;
-import com.tl.tutor_link.model.RefreshToken;
+import com.tl.tutor_link.auth.dto.AuthResponseDto;
+import com.tl.tutor_link.auth.dto.LoginUserDto;
+import com.tl.tutor_link.auth.dto.RegisterUserDto;
+import com.tl.tutor_link.auth.dto.VerifyUserDto;
+import com.tl.tutor_link.auth.model.RefreshToken;
 import com.tl.tutor_link.user.model.User;
-import com.tl.tutor_link.service.AuthenticationService;
-import com.tl.tutor_link.service.CookieService;
-import com.tl.tutor_link.service.JwtService;
-import com.tl.tutor_link.service.RefreshTokenService;
+import com.tl.tutor_link.auth.service.AuthenticationService;
+import com.tl.tutor_link.auth.service.CookieService;
+import com.tl.tutor_link.auth.service.JwtService;
+import com.tl.tutor_link.auth.service.RefreshTokenService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;

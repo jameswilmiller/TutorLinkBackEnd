@@ -1,4 +1,4 @@
-package com.tl.tutor_link.service;
+package com.tl.tutor_link.image.service;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;

@@ -1,8 +1,8 @@
-package com.tl.tutor_link.service;
+package com.tl.tutor_link.auth.service;
 
-import com.tl.tutor_link.dto.LoginUserDto;
-import com.tl.tutor_link.dto.RegisterUserDto;
-import com.tl.tutor_link.dto.VerifyUserDto;
+import com.tl.tutor_link.auth.dto.LoginUserDto;
+import com.tl.tutor_link.auth.dto.RegisterUserDto;
+import com.tl.tutor_link.auth.dto.VerifyUserDto;
 import com.tl.tutor_link.user.model.Role;
 import com.tl.tutor_link.user.model.User;
 import com.tl.tutor_link.user.repository.UserRepository;

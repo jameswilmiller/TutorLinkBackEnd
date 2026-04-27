@@ -1,8 +1,8 @@
-package com.tl.tutor_link.service;
+package com.tl.tutor_link.auth.service;
 
-import com.tl.tutor_link.model.RefreshToken;
+import com.tl.tutor_link.auth.model.RefreshToken;
 import com.tl.tutor_link.user.model.User;
-import com.tl.tutor_link.repository.RefreshTokenRepository;
+import com.tl.tutor_link.auth.repository.RefreshTokenRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
