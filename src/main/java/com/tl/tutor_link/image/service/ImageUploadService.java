@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
@@ -48,8 +49,12 @@ public class ImageUploadService {
                 RequestBody.fromBytes(file.getBytes())
         );
 
-        return "https://" + bucketName + ".s3." + region + ".amazonaws.com/" + key;
+        return key;
+    }
 
+    public String getPublicUrl(String key) {
+        if (key == null || key.isBlank()) return null;
+        return "https://" + bucketName + ".s3." + region + ".amazonaws.com/" + key;
     }
 
     private void validateFile(MultipartFile file) {
@@ -72,5 +77,16 @@ public class ImageUploadService {
         }
 
         return fileName.substring(fileName.lastIndexOf("."));
+    }
+
+    public void deleteImage(String key) {
+        try {
+            s3Client.deleteObject(DeleteObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(key)
+                    .build());
+        } catch (Exception e) {
+            System.err.println("Failed to delete old image: " + key + " — " + e.getMessage());
+        }
     }
 }

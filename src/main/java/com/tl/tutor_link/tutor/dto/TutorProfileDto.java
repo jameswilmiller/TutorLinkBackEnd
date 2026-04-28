@@ -18,6 +18,7 @@ public class TutorProfileDto {
     private boolean remote;
     private Integer hourlyRate;
     private String profileImageKey;
+    private String profileImageUrl;
     private Double longitude;
     private Double latitude;
 }

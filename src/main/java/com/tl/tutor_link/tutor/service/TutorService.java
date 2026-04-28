@@ -170,4 +170,14 @@ public class TutorService {
         };
     }
 
+    public void updateProfileImage(User user, String key) {
+        Tutor tutor = tutorRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Tutor profile not found"));
+
+        tutor.setProfileImageKey(key);
+        tutorRepository.save(tutor);
+    }
+
+
+
 }

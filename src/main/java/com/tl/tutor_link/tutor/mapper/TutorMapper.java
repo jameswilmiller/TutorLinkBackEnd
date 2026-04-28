@@ -1,5 +1,6 @@
 package com.tl.tutor_link.tutor.mapper;
 
+import com.tl.tutor_link.image.service.ImageUploadService;
 import com.tl.tutor_link.tutor.dto.TutorProfileDto;
 import com.tl.tutor_link.tutor.model.Tutor;
 import org.springframework.stereotype.Component;
@@ -9,10 +10,14 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class TutorMapper {
+    private final ImageUploadService imageUploadService;
+
+    public TutorMapper(ImageUploadService imageUploadService) {
+        this.imageUploadService = imageUploadService;
+    }
     public TutorProfileDto toDto(Tutor tutor) {
-        if (tutor == null) {
-            return null;
-        }
+        if (tutor == null) return null;
+
         TutorProfileDto dto = new TutorProfileDto();
 
         dto.setId(tutor.getId());
@@ -28,6 +33,7 @@ public class TutorMapper {
         dto.setRemote(tutor.isRemote());
         dto.setHourlyRate(tutor.getHourlyRate());
         dto.setProfileImageKey(tutor.getProfileImageKey());
+        dto.setProfileImageUrl(imageUploadService.getPublicUrl(tutor.getProfileImageKey()));
         dto.setLongitude(tutor.getLongitude());
         dto.setLatitude(tutor.getLatitude());
         return dto;

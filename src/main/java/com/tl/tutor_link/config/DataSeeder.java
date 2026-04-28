@@ -34,159 +34,81 @@ public class DataSeeder implements CommandLineRunner {
             return;
         }
 
-        createDemoTutor(
-                "Emily",
-                "Chen",
-                "emily.chen.demo@tutorlink.com",
-                "emilychen",
-                "Math Methods, Specialist Maths, Physics",
-                "St Lucia QLD, Australia",
-                -27.4975,
-                153.0137,
-                true,
-                55,
-                "UQ engineering student helping high school and first-year university students build confidence in maths and physics."
-        );
+        createDemoTutor("Bill", "Nye", "bill.nye.demo@tutorlink.com", "billnye",
+                "Physics, Chemistry, Science Communication",
+                "St Lucia QLD, Australia", -27.4975, 153.0137,
+                true, 75,
+                "Makes science feel less like homework and more like a controlled explosion. Strong believer that every problem can be solved with curiosity, evidence, and a bow tie.",
+                "profile-images/bill-nye.jpg");
 
-        createDemoTutor(
-                "James",
-                "Wilson",
-                "james.wilson.demo@tutorlink.com",
-                "jameswilson",
-                "Computer Science, Java, React",
-                "Brisbane City QLD, Australia",
-                -27.4705,
-                153.0260,
-                true,
-                65,
-                "Software engineering graduate tutoring programming, web development, and computer science fundamentals."
-        );
+        createDemoTutor("Neil", "deGrasse Tyson", "neil.tyson.demo@tutorlink.com", "neiltyson",
+                "Astronomy, Physics, Space Science",
+                "South Brisbane QLD, Australia", -27.4810, 153.0220,
+                true, 90,
+                "Will help you understand the cosmos and also remind you your assignment deadline is still very real.",
+                "profile-images/neil-tyson.jpg");
 
-        createDemoTutor(
-                "Sophie",
-                "Taylor",
-                "sophie.taylor.demo@tutorlink.com",
-                "sophietaylor",
-                "English, Essay Writing, Literature",
-                "Indooroopilly QLD, Australia",
-                -27.4990,
-                152.9730,
-                false,
-                45,
-                "Experienced English tutor focused on essay structure, exam preparation, and clear academic writing."
-        );
+        createDemoTutor("Gordon", "Ramsay", "gordon.ramsay.demo@tutorlink.com", "gordonramsay",
+                "Hospitality, Cooking, Food Technology",
+                "Fortitude Valley QLD, Australia", -27.4570, 153.0340,
+                false, 85,
+                "Your work is RAW until proven otherwise. Expect brutally honest feedback and significantly improved results.",
+                "profile-images/gordon-ramsay.png");
 
-        createDemoTutor(
-                "Daniel",
-                "Nguyen",
-                "daniel.nguyen.demo@tutorlink.com",
-                "danielnguyen",
-                "Chemistry, Biology, Science",
-                "Toowong QLD, Australia",
-                -27.4850,
-                152.9920,
-                false,
-                50,
-                "Science tutor helping students understand difficult concepts through simple explanations and practice questions."
-        );
+        createDemoTutor("David", "Attenborough", "david.attenborough.demo@tutorlink.com", "davidattenborough",
+                "Biology, Environmental Science, Geography",
+                "New Farm QLD, Australia", -27.4670, 153.0450,
+                true, 70,
+                "Calmly explains biology so well you might accidentally enjoy studying. Narration voice not guaranteed but highly likely.",
+                "profile-images/david-att.jpg");
 
-        createDemoTutor(
-                "Olivia",
-                "Brown",
-                "olivia.brown.demo@tutorlink.com",
-                "oliviabrown",
-                "Primary Maths, English, NAPLAN",
-                "South Brisbane QLD, Australia",
-                -27.4810,
-                153.0220,
-                true,
-                40,
-                "Friendly tutor for primary school students, specialising in foundational maths, reading, and NAPLAN preparation."
-        );
+        createDemoTutor("Marie", "Curie", "marie.curie.demo@tutorlink.com", "mariecurie",
+                "Chemistry, Physics, Research Methods",
+                "Toowong QLD, Australia", -27.4850, 152.9920,
+                false, 80,
+                "Serious about chemistry, precision, and not guessing answers. Helps students shine without the radiation.",
+                "profile-images/marie-curie.jpg");
 
-        createDemoTutor(
-                "Aiden",
-                "Patel",
-                "aiden.patel.demo@tutorlink.com",
-                "aidenpatel",
-                "Accounting, Economics, Business",
-                "Springfield QLD, Australia",
-                -27.6810,
-                152.9030,
-                true,
-                60,
-                "Business and economics tutor helping senior students and university students prepare for assessments."
-        );
+        createDemoTutor("Albert", "Einstein", "albert.einstein.demo@tutorlink.com", "alberteinstein",
+                "Maths, Physics, Problem Solving",
+                "Indooroopilly QLD, Australia", -27.4990, 152.9730,
+                true, 95,
+                "Breaks down complex problems simply. Hair may be chaotic, explanations are not.",
+                "profile-images/albert-einstein.jpg");
 
-        createDemoTutor(
-                "Mia",
-                "Roberts",
-                "mia.roberts.demo@tutorlink.com",
-                "miaroberts",
-                "Spanish, French, ESL",
-                "West End QLD, Australia",
-                -27.4815,
-                153.0090,
-                true,
-                50,
-                "Language tutor focused on conversation practice, grammar, pronunciation, and exam preparation."
-        );
+        createDemoTutor("Taylor", "Swift", "taylor.swift.demo@tutorlink.com", "taylorswift",
+                "English, Writing, Creative Expression",
+                "West End QLD, Australia", -27.4815, 153.0090,
+                true, 88,
+                "Turns essays into compelling narratives. Known for helping students rewrite their worst drafts into something impressive.",
+                "profile-images/taylor-swift.png");
 
-        createDemoTutor(
-                "Noah",
-                "Kim",
-                "noah.kim.demo@tutorlink.com",
-                "noahkim",
-                "Guitar, Music Theory",
-                "New Farm QLD, Australia",
-                -27.4670,
-                153.0450,
-                false,
-                45,
-                "Relaxed guitar tutor teaching beginners and intermediate players practical songs, technique, and music theory."
-        );
+        createDemoTutor("Elon", "Musk", "elon.musk.demo@tutorlink.com", "elonmusk",
+                "Engineering, Startups, Programming",
+                "Brisbane City QLD, Australia", -27.4705, 153.0260,
+                false, 100,
+                "Will question your entire project scope and then help you rebuild it faster. May suggest adding rockets.",
+                "profile-images/elon-musk.webp");
 
-        createDemoTutor(
-                "Grace",
-                "Martin",
-                "grace.martin.demo@tutorlink.com",
-                "gracemartin",
-                "Psychology, Statistics, Research Methods",
-                "Kelvin Grove QLD, Australia",
-                -27.4480,
-                153.0130,
-                true,
-                58,
-                "Psychology tutor helping students with statistics, report writing, and research design."
-        );
+        createDemoTutor("Steve", "Irwin", "steve.irwin.demo@tutorlink.com", "steveirwin",
+                "Biology, Wildlife Conservation, Outdoor Education",
+                "Woolloongabba QLD, Australia", -27.4930, 153.0360,
+                false, 65,
+                "Crikey! Makes biology exciting and easy to understand. High energy, great explanations.",
+                "profile-images/steve-irwin.jpg");
 
-        createDemoTutor(
-                "Liam",
-                "Anderson",
-                "liam.anderson.demo@tutorlink.com",
-                "liamanderson",
-                "Maths, Physics, Engineering",
-                "Sunnybank QLD, Australia",
-                -27.5790,
-                153.0600,
-                false,
-                52,
-                "Engineering student tutoring maths and physics with a focus on problem-solving and exam technique."
-        );
+        createDemoTutor("Ada", "Lovelace", "ada.lovelace.demo@tutorlink.com", "adalovelace",
+                "Computer Science, Algorithms, Programming",
+                "Kelvin Grove QLD, Australia", -27.4480, 153.0130,
+                true, 78,
+                "Explains algorithms clearly and elegantly. Great for students struggling with programming logic.",
+                "profile-images/ada-lovelace.png");
     }
 
     private void createDemoTutor(
-            String firstname,
-            String lastname,
-            String email,
-            String username,
-            String subjects,
-            String location,
-            Double latitude,
-            Double longitude,
-            boolean remote,
-            Integer hourlyRate,
-            String bio
+            String firstname, String lastname, String email, String username,
+            String subjects, String location, Double latitude, Double longitude,
+            boolean remote, Integer hourlyRate, String bio, String profileImageKey
     ) {
         User user = new User();
         user.setFirstname(firstname);
@@ -208,7 +130,7 @@ public class DataSeeder implements CommandLineRunner {
         tutor.setRemote(remote);
         tutor.setHourlyRate(hourlyRate);
         tutor.setBio(bio);
-        tutor.setProfileImageKey(null);
+        tutor.setProfileImageKey(profileImageKey);
 
         tutorRepository.save(tutor);
     }
