@@ -111,7 +111,7 @@ This approach balances security and usability:
 - GET /tutors/{id}
 - GET /tutors/me/profile
 - POST /tutors/me/profile
-Detailed request and response formats should be documented separately.
+Detailed request and response formats shall be stored in the tutorlink docs repository
 
 ## Data Model Summary
 The application uses a relational data model implemented with JPA entities.
