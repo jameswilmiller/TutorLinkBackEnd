@@ -1,7 +1,10 @@
 package com.tl.tutor_link.tutor.mapper;
 
 import com.tl.tutor_link.image.service.ImageUploadService;
+import com.tl.tutor_link.tutor.dto.TutorCredentialDto;
+import com.tl.tutor_link.tutor.dto.TutorLanguageDto;
 import com.tl.tutor_link.tutor.dto.TutorProfileDto;
+import com.tl.tutor_link.tutor.dto.TutorStyleDto;
 import com.tl.tutor_link.tutor.model.Tutor;
 import org.springframework.stereotype.Component;
 
@@ -28,6 +31,7 @@ public class TutorMapper {
         dto.setLastname(tutor.getUser().getLastname());
 
         dto.setBio(tutor.getBio());
+        dto.setTagline(tutor.getTagline());
         dto.setSubjects(tutor.getSubjects());
         dto.setLocation(tutor.getLocation());
         dto.setRemote(tutor.isRemote());
@@ -36,6 +40,33 @@ public class TutorMapper {
         dto.setProfileImageUrl(imageUploadService.getPublicUrl(tutor.getProfileImageKey()));
         dto.setLongitude(tutor.getLongitude());
         dto.setLatitude(tutor.getLatitude());
+
+        dto.setLanguages(tutor.getLanguages().stream()
+                .map(l -> {
+                    TutorLanguageDto dto2 = new TutorLanguageDto();
+                    dto2.setId(l.getId());
+                    dto2.setLanguage(l.getLanguage());
+                    dto2.setLevel(l.getLevel());
+                    return dto2;
+                }).toList());
+        dto.setStyles(tutor.getStyles().stream()
+                .map(s -> {
+                    TutorStyleDto dto2 = new TutorStyleDto();
+                    dto2.setId(s.getId());
+                    dto2.setLabel(s.getLabel());
+                    dto2.setDescription(s.getDescription());
+                    return dto2;
+                }).toList());
+        dto.setCredentials(tutor.getCredentials().stream()
+                .map(c -> {
+                    TutorCredentialDto dto2 = new TutorCredentialDto();
+                    dto2.setId(c.getId());
+                    dto2.setTitle(c.getTitle());
+                    dto2.setInstitution(c.getInstitution());
+                    dto2.setYear(c.getYear());
+                    return dto2;
+                }).toList());
+
         return dto;
     }
 }

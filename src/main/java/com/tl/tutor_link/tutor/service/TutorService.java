@@ -4,6 +4,9 @@ import com.tl.tutor_link.tutor.dto.TutorProfileDto;
 import com.tl.tutor_link.tutor.dto.TutorSearchRequestDto;
 import com.tl.tutor_link.tutor.mapper.TutorMapper;
 import com.tl.tutor_link.tutor.model.Tutor;
+import com.tl.tutor_link.tutor.model.TutorCredential;
+import com.tl.tutor_link.tutor.model.TutorLanguage;
+import com.tl.tutor_link.tutor.model.TutorStyle;
 import com.tl.tutor_link.user.model.User;
 import com.tl.tutor_link.tutor.repository.TutorRepository;
 import org.springframework.stereotype.Service;
@@ -84,6 +87,7 @@ public class TutorService {
 
     private void applyProfileUpdates(Tutor tutor, TutorProfileRequestDto dto) {
         tutor.setBio(dto.getBio());
+        tutor.setTagline(dto.getTagline());
         tutor.setSubjects(dto.getSubjects());
         tutor.setLocation(dto.getLocation());
         tutor.setRemote(dto.isRemote());
@@ -91,6 +95,42 @@ public class TutorService {
         tutor.setProfileImageKey(dto.getProfileImageKey());
         tutor.setLongitude(dto.getLongitude());
         tutor.setLatitude(dto.getLatitude());
+        tutor.getLanguages().clear();
+
+        if (dto.getLanguages() != null) {
+            dto.getLanguages().forEach(l -> {
+                TutorLanguage lang = new TutorLanguage();
+                lang.setTutor(tutor);
+                lang.setLanguage(l.getLanguage());
+                lang.setLevel(l.getLevel());
+                tutor.getLanguages().add(lang);
+            });
+        }
+
+
+        tutor.getStyles().clear();
+        if (dto.getStyles() != null) {
+            dto.getStyles().forEach(s -> {
+                TutorStyle style = new TutorStyle();
+                style.setTutor(tutor);
+                style.setLabel(s.getLabel());
+                style.setDescription(s.getDescription());
+                tutor.getStyles().add(style);
+            });
+        }
+
+        // credentials
+        tutor.getCredentials().clear();
+        if (dto.getCredentials() != null) {
+            dto.getCredentials().forEach(c -> {
+                TutorCredential cred = new TutorCredential();
+                cred.setTutor(tutor);
+                cred.setTitle(c.getTitle());
+                cred.setInstitution(c.getInstitution());
+                cred.setYear(c.getYear());
+                tutor.getCredentials().add(cred);
+            });
+        }
     }
 
     private boolean matchesRemote(Tutor tutor, Boolean remote) {

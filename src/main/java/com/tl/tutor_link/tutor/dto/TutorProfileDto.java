@@ -3,6 +3,8 @@ package com.tl.tutor_link.tutor.dto;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 public class TutorProfileDto {
@@ -13,6 +15,7 @@ public class TutorProfileDto {
     private String lastname;
 
     private String bio;
+    private String tagline;
     private String subjects;
     private String location;
     private boolean remote;
@@ -21,4 +24,7 @@ public class TutorProfileDto {
     private String profileImageUrl;
     private Double longitude;
     private Double latitude;
+    private List<TutorLanguageDto> languages;
+    private List<TutorCredentialDto> credentials;
+    private List<TutorStyleDto> styles;
 }
