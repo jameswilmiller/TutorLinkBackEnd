@@ -1,5 +1,6 @@
 package com.tl.tutor_link.tutor.dto;
 
+import com.tl.tutor_link.tutor.model.Faculty;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,7 +11,8 @@ import java.util.List;
 public class TutorProfileRequestDto {
     private String bio;
     private String tagline;
-    private String subjects;
+    private List<Long> courseIds;
+    private List<Faculty> faculties;
     private String location;
     private boolean remote;
     private Integer hourlyRate;

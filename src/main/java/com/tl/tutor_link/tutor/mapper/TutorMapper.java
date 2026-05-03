@@ -14,9 +14,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class TutorMapper {
     private final ImageUploadService imageUploadService;
+    private final CourseMapper courseMapper;
 
-    public TutorMapper(ImageUploadService imageUploadService) {
+    public TutorMapper(ImageUploadService imageUploadService, CourseMapper courseMapper) {
         this.imageUploadService = imageUploadService;
+        this.courseMapper = courseMapper;
     }
     public TutorProfileDto toDto(Tutor tutor) {
         if (tutor == null) return null;
@@ -32,7 +34,7 @@ public class TutorMapper {
 
         dto.setBio(tutor.getBio());
         dto.setTagline(tutor.getTagline());
-        dto.setSubjects(tutor.getSubjects());
+
         dto.setLocation(tutor.getLocation());
         dto.setRemote(tutor.isRemote());
         dto.setHourlyRate(tutor.getHourlyRate());
@@ -40,7 +42,10 @@ public class TutorMapper {
         dto.setProfileImageUrl(imageUploadService.getPublicUrl(tutor.getProfileImageKey()));
         dto.setLongitude(tutor.getLongitude());
         dto.setLatitude(tutor.getLatitude());
-
+        dto.setCourses(tutor.getCourses().stream()
+                .map(courseMapper::toDto)
+                .toList());
+        dto.setFaculties(tutor.getFaculties());
         dto.setLanguages(tutor.getLanguages().stream()
                 .map(l -> {
                     TutorLanguageDto dto2 = new TutorLanguageDto();
@@ -66,6 +71,7 @@ public class TutorMapper {
                     dto2.setYear(c.getYear());
                     return dto2;
                 }).toList());
+
 
         return dto;
     }

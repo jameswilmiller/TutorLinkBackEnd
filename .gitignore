@@ -38,4 +38,5 @@ out/
 
 
 ### extra ###
+src/main/resources/courses.json
 .env

@@ -1,0 +1,9 @@
+package com.tl.tutor_link.tutor.model;
+
+public enum Faculty {
+    BUSINESS_ECONOMICS_LAW,
+    ENGINEERING_ARCHITECTURE_IT,
+    HEALTH_MEDICINE_BEHAVIOURAL_SCIENCES,
+    HUMANITIES_ARTS_SOCIAL_SCIENCES,
+    SCIENCE
+}

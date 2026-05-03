@@ -3,6 +3,7 @@ package com.tl.tutor_link.tutor.controller;
 import com.tl.tutor_link.tutor.dto.TutorProfileDto;
 import com.tl.tutor_link.tutor.dto.TutorProfileRequestDto;
 import com.tl.tutor_link.tutor.dto.TutorSearchRequestDto;
+import com.tl.tutor_link.tutor.model.Faculty;
 import com.tl.tutor_link.tutor.service.TutorService;
 import com.tl.tutor_link.user.model.User;
 
@@ -45,15 +46,17 @@ public class TutorController {
 
     @GetMapping
     public ResponseEntity<List<TutorProfileDto>> getTutors(
-            @RequestParam(required = false) String subject,
+            @RequestParam(required = false) String courseCode,
+            @RequestParam(required = false) Faculty faculty,
             @RequestParam(required = false) String location,
             @RequestParam(required = false) Double latitude,
             @RequestParam(required = false) Double longitude,
             @RequestParam(required = false) Boolean remote,
-            @RequestParam(defaultValue = "relevance") String sort
+            @RequestParam(defaultValue = "newest") String sort
     ) {
         TutorSearchRequestDto request = new TutorSearchRequestDto();
-        request.setSubject(subject);
+        request.setCourseCode(courseCode);
+        request.setFaculty(faculty);
         request.setLocation(location);
         request.setLatitude(latitude);
         request.setLongitude(longitude);

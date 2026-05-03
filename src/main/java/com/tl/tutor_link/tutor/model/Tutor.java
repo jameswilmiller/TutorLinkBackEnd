@@ -30,10 +30,27 @@ public class Tutor {
     @OneToMany(mappedBy ="tutor", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TutorCredential> credentials = new ArrayList<>();
 
+    @ManyToMany
+    @JoinTable(
+            name = "tutor_courses",
+            joinColumns = @JoinColumn(name = "tutor_id"),
+            inverseJoinColumns = @JoinColumn(name = "course_id")
+    )
+    private List<Course> courses = new ArrayList<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "tutor_faculties",
+            joinColumns = @JoinColumn(name = "tutor_id")
+    )
+    @Enumerated(EnumType.STRING)
+    @Column(name = "faculty")
+    private List<Faculty> faculties = new ArrayList<>();
+
     @Column
     private String bio;
     private String tagline;
-    private String subjects;
+
     private String location;
     private boolean remote;
     private Integer hourlyRate;

@@ -3,10 +3,8 @@ import com.tl.tutor_link.tutor.dto.TutorProfileRequestDto;
 import com.tl.tutor_link.tutor.dto.TutorProfileDto;
 import com.tl.tutor_link.tutor.dto.TutorSearchRequestDto;
 import com.tl.tutor_link.tutor.mapper.TutorMapper;
-import com.tl.tutor_link.tutor.model.Tutor;
-import com.tl.tutor_link.tutor.model.TutorCredential;
-import com.tl.tutor_link.tutor.model.TutorLanguage;
-import com.tl.tutor_link.tutor.model.TutorStyle;
+import com.tl.tutor_link.tutor.model.*;
+import com.tl.tutor_link.tutor.repository.CourseRepository;
 import com.tl.tutor_link.user.model.User;
 import com.tl.tutor_link.tutor.repository.TutorRepository;
 import org.springframework.stereotype.Service;
@@ -20,9 +18,12 @@ public class TutorService {
 
     private final TutorRepository tutorRepository;
     private final TutorMapper tutorMapper;
-    public TutorService(TutorRepository tutorRepository, TutorMapper tutorMapper) {
+    private final CourseRepository courseRepository;
+
+    public TutorService(TutorRepository tutorRepository, TutorMapper tutorMapper, CourseRepository courseRepository) {
         this.tutorRepository = tutorRepository;
         this.tutorMapper = tutorMapper;
+        this.courseRepository = courseRepository;
     }
 
     public TutorProfileDto createTutorProfile(User user, TutorProfileRequestDto dto) {
@@ -77,7 +78,8 @@ public class TutorService {
 
         return tutorRepository.findAll(sort)
                 .stream()
-                .filter(tutor -> matchesSubject(tutor, request.getSubject()))
+                .filter(tutor -> matchesCourse(tutor, request.getCourseCode()))
+                .filter(tutor -> matchesFaculty(tutor, request.getFaculty()))
                 .filter(tutor -> matchesLocation(tutor, request.getLocation()))
                 .filter(tutor -> matchesRemote(tutor, request.getRemote()))
                 .filter(tutor -> matchesDistance(tutor, request, MAX_DISTANCE_KM))
@@ -88,7 +90,7 @@ public class TutorService {
     private void applyProfileUpdates(Tutor tutor, TutorProfileRequestDto dto) {
         tutor.setBio(dto.getBio());
         tutor.setTagline(dto.getTagline());
-        tutor.setSubjects(dto.getSubjects());
+
         tutor.setLocation(dto.getLocation());
         tutor.setRemote(dto.isRemote());
         tutor.setHourlyRate(dto.getHourlyRate());
@@ -96,7 +98,19 @@ public class TutorService {
         tutor.setLongitude(dto.getLongitude());
         tutor.setLatitude(dto.getLatitude());
         tutor.getLanguages().clear();
+        if (dto.getFaculties() != null) {
+            tutor.getFaculties().clear();
+            tutor.getFaculties().addAll(dto.getFaculties());
+        }
 
+        if (dto.getCourseIds() != null) {
+            List<Course> courses = dto.getCourseIds().stream()
+                    .map(id -> courseRepository.findById(id)
+                            .orElseThrow(() -> new RuntimeException("Course not found: " + id)))
+                    .toList();
+            tutor.getCourses().clear();
+            tutor.getCourses().addAll(courses);
+        }
         if (dto.getLanguages() != null) {
             dto.getLanguages().forEach(l -> {
                 TutorLanguage lang = new TutorLanguage();
@@ -139,12 +153,17 @@ public class TutorService {
         }
         return tutor.isRemote() == remote;
     }
-    private boolean matchesSubject(Tutor tutor, String subject) {
-        if (subject == null || subject.isBlank()) return true;
-        if (tutor.getSubjects() == null) return false;
-        return tutor.getSubjects().toLowerCase().contains(subject.toLowerCase());
+
+    private boolean matchesCourse(Tutor tutor, String courseCode) {
+        if (courseCode == null || courseCode.isBlank()) return true;
+        return tutor.getCourses().stream()
+                .anyMatch(c -> c.getCourseCode().equalsIgnoreCase(courseCode));
     }
 
+    private boolean matchesFaculty(Tutor tutor, Faculty faculty) {
+        if (faculty == null) return true;
+        return tutor.getFaculties().contains(faculty);
+    }
     private boolean matchesDistance(
             Tutor tutor,
             TutorSearchRequestDto request,
@@ -217,7 +236,4 @@ public class TutorService {
         tutor.setProfileImageKey(key);
         tutorRepository.save(tutor);
     }
-
-
-
 }
