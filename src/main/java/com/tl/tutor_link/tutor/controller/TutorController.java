@@ -8,6 +8,7 @@ import com.tl.tutor_link.tutor.model.Faculty;
 import com.tl.tutor_link.tutor.service.TutorService;
 import com.tl.tutor_link.user.model.User;
 
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 
@@ -34,14 +35,14 @@ public class TutorController {
     @PutMapping("/me/profile")
     public ResponseEntity<TutorProfileDto> updateTutorProfile(
             @AuthenticationPrincipal User user,
-            @RequestBody TutorProfileRequestDto dto) {
+            @Valid @RequestBody TutorProfileRequestDto dto) {
         return ResponseEntity.ok(tutorService.updateTutorProfile(user, dto));
     }
 
     @PostMapping("/me/profile")
     public ResponseEntity<TutorProfileDto> createTutorProfile(
             @AuthenticationPrincipal User user,
-            @RequestBody TutorProfileRequestDto dto
+            @Valid @RequestBody TutorProfileRequestDto dto
     ) {
         return ResponseEntity.ok(tutorService.createTutorProfile(user, dto));
     }
@@ -82,7 +83,7 @@ public class TutorController {
     @PostMapping("/{id}/enquire")
     public ResponseEntity<Map<String, String>> enquire(
             @PathVariable Long id,
-            @RequestBody EnquiryRequestDto dto,
+            @Valid @RequestBody EnquiryRequestDto dto,
             @AuthenticationPrincipal User user
     ) {
         tutorService.handleEnquiry(id, dto, user);

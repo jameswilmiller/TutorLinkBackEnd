@@ -11,6 +11,7 @@ import com.tl.tutor_link.auth.service.CookieService;
 import com.tl.tutor_link.auth.service.JwtService;
 import com.tl.tutor_link.auth.service.RefreshTokenService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -36,13 +37,13 @@ public class AuthenticationController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<?> register(@RequestBody RegisterUserDto registerUserDto) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterUserDto registerUserDto) {
         authenticationService.signup(registerUserDto);
         return ResponseEntity.ok("User registered successfully. please verify your email");
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponseDto> authenticate(@RequestBody LoginUserDto loginUserDto) {
+    public ResponseEntity<AuthResponseDto> authenticate(@Valid @RequestBody LoginUserDto loginUserDto) {
         User authenticatedUser = authenticationService.authenticate(loginUserDto);
 
         String accessToken = jwtService.generateAccessToken(authenticatedUser);
@@ -104,7 +105,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/verify")
-    public ResponseEntity<?> verifyUser(@RequestBody VerifyUserDto verifyUserDto) {
+    public ResponseEntity<?> verifyUser(@Valid @RequestBody VerifyUserDto verifyUserDto) {
         try {
             authenticationService.verifyUser(verifyUserDto);
             return ResponseEntity.ok("account verified successfully");

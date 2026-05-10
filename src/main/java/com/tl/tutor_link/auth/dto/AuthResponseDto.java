@@ -10,6 +10,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AuthResponseDto {
+
     private String accessToken;
     private long accessTokenExpiresIn;
 }
