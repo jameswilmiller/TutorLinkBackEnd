@@ -29,6 +29,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'org.postgresql:postgresql'
 	annotationProcessor 'org.projectlombok:lombok'
@@ -41,6 +42,7 @@ dependencies {
 	implementation 'io.jsonwebtoken:jjwt-impl:0.13.0'
 	implementation 'io.jsonwebtoken:jjwt-jackson:0.13.0'
     implementation "software.amazon.awssdk:s3:2.31.67"
+	implementation 'com.bucket4j:bucket4j-core:8.10.1'
 }
 
 tasks.named('test') {

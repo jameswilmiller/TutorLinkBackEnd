@@ -39,7 +39,7 @@ public class TutorMapper {
         dto.setRemote(tutor.isRemote());
         dto.setHourlyRate(tutor.getHourlyRate());
         dto.setProfileImageKey(tutor.getProfileImageKey());
-        dto.setProfileImageUrl(imageUploadService.getPublicUrl(tutor.getProfileImageKey()));
+        dto.setProfileImageUrl(imageUploadService.getPresignedUrl(tutor.getProfileImageKey()));
         dto.setLongitude(tutor.getLongitude());
         dto.setLatitude(tutor.getLatitude());
         dto.setCourses(tutor.getCourses().stream()

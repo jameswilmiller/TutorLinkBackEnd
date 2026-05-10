@@ -1,5 +1,6 @@
 package com.tl.tutor_link.tutor.controller;
 
+import com.tl.tutor_link.tutor.dto.EnquiryRequestDto;
 import com.tl.tutor_link.tutor.dto.TutorProfileDto;
 import com.tl.tutor_link.tutor.dto.TutorProfileRequestDto;
 import com.tl.tutor_link.tutor.dto.TutorSearchRequestDto;
@@ -15,6 +16,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Handles tutor related endpoints such as tutor profile manage, tutor browsing and tutor search.
@@ -75,5 +77,15 @@ public class TutorController {
     @GetMapping("/{id}")
     public ResponseEntity<TutorProfileDto> getTutorById(@PathVariable Long id) {
         return ResponseEntity.ok(tutorService.getTutorById(id));
+    }
+
+    @PostMapping("/{id}/enquire")
+    public ResponseEntity<Map<String, String>> enquire(
+            @PathVariable Long id,
+            @RequestBody EnquiryRequestDto dto,
+            @AuthenticationPrincipal User user
+    ) {
+        tutorService.handleEnquiry(id, dto, user);
+        return ResponseEntity.ok(Map.of("status", "sent"));
     }
 }

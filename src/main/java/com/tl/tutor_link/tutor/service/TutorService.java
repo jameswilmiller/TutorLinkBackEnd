@@ -1,4 +1,9 @@
 package com.tl.tutor_link.tutor.service;
+import com.tl.tutor_link.auth.service.EmailService;
+import com.tl.tutor_link.common.exception.ConflictException;
+import com.tl.tutor_link.common.exception.EmailSendException;
+import com.tl.tutor_link.common.exception.ResourceNotFoundException;
+import com.tl.tutor_link.tutor.dto.EnquiryRequestDto;
 import com.tl.tutor_link.tutor.dto.TutorProfileRequestDto;
 import com.tl.tutor_link.tutor.dto.TutorProfileDto;
 import com.tl.tutor_link.tutor.dto.TutorSearchRequestDto;
@@ -19,16 +24,18 @@ public class TutorService {
     private final TutorRepository tutorRepository;
     private final TutorMapper tutorMapper;
     private final CourseRepository courseRepository;
+    private final EmailService emailService;
 
-    public TutorService(TutorRepository tutorRepository, TutorMapper tutorMapper, CourseRepository courseRepository) {
+    public TutorService(TutorRepository tutorRepository, TutorMapper tutorMapper, CourseRepository courseRepository, EmailService emailService) {
         this.tutorRepository = tutorRepository;
         this.tutorMapper = tutorMapper;
         this.courseRepository = courseRepository;
+        this.emailService = emailService;
     }
 
     public TutorProfileDto createTutorProfile(User user, TutorProfileRequestDto dto) {
         if (tutorRepository.findByUser(user).isPresent()) {
-            throw new RuntimeException("Tutor profile already exists");
+            throw new ConflictException("Tutor profile already exists for this user");
         }
 
         Tutor tutor = new Tutor();
@@ -39,9 +46,10 @@ public class TutorService {
         return tutorMapper.toDto(savedTutor);
     }
 
+
     public TutorProfileDto updateTutorProfile(User user, TutorProfileRequestDto dto) {
         Tutor tutor = tutorRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("Tutor profile could not be found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Tutor profile not found"));
 
         applyProfileUpdates(tutor, dto);
         Tutor savedTutor = tutorRepository.save(tutor);
@@ -51,23 +59,16 @@ public class TutorService {
     public TutorProfileDto getMyTutorProfile(User user) {
 
         Tutor tutor = tutorRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("Tutor Profile could not be found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Tutor profile not found"));
 
         return tutorMapper.toDto(tutor);
 
     }
 
-    public List<TutorProfileDto> getTutors() {
-        return tutorRepository.findAll()
-                .stream()
-                .map(tutorMapper::toDto)
-                .toList();
-    }
-
     public TutorProfileDto getTutorById(Long id) {
 
         Tutor tutor = tutorRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Tutor could not be found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Tutor", id));
 
         return tutorMapper.toDto(tutor);
     }
@@ -106,7 +107,7 @@ public class TutorService {
         if (dto.getCourseIds() != null) {
             List<Course> courses = dto.getCourseIds().stream()
                     .map(id -> courseRepository.findById(id)
-                            .orElseThrow(() -> new RuntimeException("Course not found: " + id)))
+                            .orElseThrow(() -> new ResourceNotFoundException("Course", id)))
                     .toList();
             tutor.getCourses().clear();
             tutor.getCourses().addAll(courses);
@@ -231,9 +232,34 @@ public class TutorService {
 
     public void updateProfileImage(User user, String key) {
         Tutor tutor = tutorRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("Tutor profile not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Tutor profile not found"));
 
         tutor.setProfileImageKey(key);
         tutorRepository.save(tutor);
+    }
+
+    public void handleEnquiry(Long tutorId, EnquiryRequestDto dto, User student) {
+        Tutor tutor = tutorRepository.findById(tutorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tutor profile not found"));
+
+        String studentName = student.getFirstname() + " " + student.getLastname();
+        String studentEmail = student.getEmail();
+        String tutorEmail = tutor.getUser().getEmail();
+        String subject = "New TutorLink enquiry from " + studentName;
+
+        String body = "<h2>New booking request</h2>"
+                + "<p><strong>From:</strong> " + studentName + " (" + studentEmail + ")</p>"
+                + "<p><strong>Course:</strong> " + dto.getCourse() + "</p>"
+                + "<p><strong>Session type:</strong> " + dto.getSessionType() + "</p>"
+                + "<p><strong>Message:</strong></p>"
+                + "<p>" + (dto.getMessage() != null ? dto.getMessage() : "No message provided") + "</p>"
+                + "<hr>"
+                + "<p>Reply directly to " + studentEmail + " to arrange the session.</p>";
+
+        try {
+            emailService.sendVerificationEmail(tutorEmail, subject, body);
+        } catch (Exception e) {
+            throw new EmailSendException("Failed to send enquiry email");
+        }
     }
 }

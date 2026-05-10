@@ -1,6 +1,7 @@
 package com.tl.tutor_link.auth.service;
 
 import com.tl.tutor_link.auth.model.RefreshToken;
+import com.tl.tutor_link.common.exception.UnauthorizedException;
 import com.tl.tutor_link.user.model.User;
 import com.tl.tutor_link.auth.repository.RefreshTokenRepository;
 import org.springframework.stereotype.Service;
@@ -32,14 +33,14 @@ public class RefreshTokenService {
 
     public RefreshToken validateStoredRefreshToken(String token) {
         RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Refresh token was not found"));
+                .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
 
         if (refreshToken.isRevoked()) {
-            throw new RuntimeException("Refresh token revoked");
+            throw new UnauthorizedException("Refresh token has been revoked");
         }
 
         if (refreshToken.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Refresh token is expired");
+            throw new UnauthorizedException("Refresh token has expired");
         }
 
         return refreshToken;

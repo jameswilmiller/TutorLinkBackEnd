@@ -27,7 +27,7 @@ public class UploadController {
     }
 
     @PostMapping("/profile-image")
-    public ResponseEntity<Map<String, String>> uploadProfileImage (
+    public ResponseEntity<Map<String, String>> uploadProfileImage(
             @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal User user
     ) throws IOException {
@@ -41,11 +41,9 @@ public class UploadController {
 
         tutorService.updateProfileImage(user, newKey);
 
-
-
-
-
-        return ResponseEntity.ok(Map.of("imageKey", newKey, "imageUrl", imageUploadService.getPublicUrl(newKey)));
-
+        return ResponseEntity.ok(Map.of(
+                "imageKey", newKey,
+                "imageUrl", imageUploadService.getPresignedUrl(newKey)
+        ));
     }
 }

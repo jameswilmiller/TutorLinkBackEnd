@@ -38,7 +38,7 @@ public class AuthenticationController {
     @PostMapping("/signup")
     public ResponseEntity<?> register(@RequestBody RegisterUserDto registerUserDto) {
         authenticationService.signup(registerUserDto);
-        return ResponseEntity.ok("User registered succesfully. please verify your email");
+        return ResponseEntity.ok("User registered successfully. please verify your email");
     }
 
     @PostMapping("/login")
