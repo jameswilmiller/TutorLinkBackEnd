@@ -19,9 +19,12 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Random;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class AuthenticationService {
+    private static final Logger log = LoggerFactory.getLogger(AuthenticationService.class);
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
@@ -39,39 +42,54 @@ public class AuthenticationService {
     }
 
     public User signup(RegisterUserDto input) {
+        log.info("Signup attempt for email: {}", input.getEmail());
         User user = new User(input.getFirstname(), input.getLastname(),input.getUsername(), input.getEmail(), passwordEncoder.encode(input.getPassword()));
         user.setVerificationCode(generateVerificationCode());
         user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
         user.setEnabled(false);
         user.getRoles().add(Role.STUDENT);
         sendVerificationEmail(user);
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        log.info("User {} created successfully", saved.getId());
+        return saved;
     }
 
     public User authenticate(LoginUserDto input) {
+        log.debug("Login attempt for email: {}", input.getEmail());
+
         User user = userRepository.findByEmail(input.getEmail())
-                .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
+                .orElseThrow(() -> {
+                    log.warn("Login failed - no account for email: {}", input.getEmail());
+                    return new UnauthorizedException("Invalid email or password");
+                });
+
         if (!user.isEnabled()) {
+            log.warn("Login attempt on unverified account: {}", input.getEmail());
             throw new UnauthorizedException("Account is not verified. Please verify your email");
         }
+
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         input.getEmail(),
                         input.getPassword()
                 )
         );
+        log.info("User {} logged in", user.getId());
         return user;
     }
 
     public void verifyUser(VerifyUserDto input) {
+        log.debug("Verification attempt for email: {}", input.getEmail());
         User user = userRepository.findByEmail(input.getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (user.getVerificationCodeExpiresAt().isBefore(LocalDateTime.now())) {
+            log.warn("Expired verification code attempt for user {}", user.getId());
             throw new BadRequestException("Verification code has expired");
         }
 
         if (!user.getVerificationCode().equals(input.getVerificationCode())) {
+            log.warn("Invalid verification code for user {}", user.getId());
             throw new BadRequestException("Invalid verification code");
         }
 
@@ -79,14 +97,17 @@ public class AuthenticationService {
         user.setVerificationCode(null);
         user.setVerificationCodeExpiresAt(null);
         userRepository.save(user);
+        log.info("User {} verified successfully", user.getId());
 
     }
 
     public void resendVerificationCode(String email) {
+        log.info("Resend verification request for email: {}", email);
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (user.isEnabled()) {
+            log.warn("Resend attempt on already-verified account: {}", email);
             throw new BadRequestException("Account is already verified");
         }
 
@@ -94,6 +115,7 @@ public class AuthenticationService {
         user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
         sendVerificationEmail(user);
         userRepository.save(user);
+        log.info("Verification code resent to user {}", user.getId());
     }
 
     public void sendVerificationEmail(User user) {
@@ -133,6 +155,7 @@ public class AuthenticationService {
         try {
             emailService.sendVerificationEmail(user.getEmail(), subject, htmlMessage);
         } catch (MessagingException e) {
+            log.error("Failed to send verification email to {}", user.getEmail(), e);
             throw new EmailSendException("Failed to send verification email");
         }
     }

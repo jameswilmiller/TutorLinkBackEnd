@@ -13,6 +13,8 @@ import com.tl.tutor_link.tutor.repository.CourseRepository;
 import com.tl.tutor_link.user.model.User;
 import com.tl.tutor_link.tutor.repository.TutorRepository;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.List;
 
 import org.springframework.data.domain.Sort;
@@ -20,6 +22,7 @@ import org.springframework.data.domain.Sort;
 public class TutorService {
     private static final double MAX_DISTANCE_KM = 20.0;
     private static final double EARTH_RADIUS_KM = 6371.0;
+    private static final Logger log = LoggerFactory.getLogger(TutorService.class);
 
     private final TutorRepository tutorRepository;
     private final TutorMapper tutorMapper;
@@ -34,7 +37,10 @@ public class TutorService {
     }
 
     public TutorProfileDto createTutorProfile(User user, TutorProfileRequestDto dto) {
+        log.info("User {} creating tutor profile", user.getId());
+
         if (tutorRepository.findByUser(user).isPresent()) {
+            log.warn("User {} attempted to create duplicate tutor profile", user.getId());
             throw new ConflictException("Tutor profile already exists for this user");
         }
 
@@ -43,21 +49,25 @@ public class TutorService {
         applyProfileUpdates(tutor, dto);
 
         Tutor savedTutor = tutorRepository.save(tutor);
+        log.info("Tutor profile {} created for user {}", savedTutor.getId(), user.getId());
         return tutorMapper.toDto(savedTutor);
     }
 
 
     public TutorProfileDto updateTutorProfile(User user, TutorProfileRequestDto dto) {
+        log.info("User {} updating tutor profile", user.getId());
+
         Tutor tutor = tutorRepository.findByUser(user)
                 .orElseThrow(() -> new ResourceNotFoundException("Tutor profile not found"));
 
         applyProfileUpdates(tutor, dto);
         Tutor savedTutor = tutorRepository.save(tutor);
+        log.info("Tutor profile {} updated", savedTutor.getId());
         return tutorMapper.toDto(savedTutor);
     }
 
     public TutorProfileDto getMyTutorProfile(User user) {
-
+        log.debug("Fetching tutor profile for user {}", user.getId());
         Tutor tutor = tutorRepository.findByUser(user)
                 .orElseThrow(() -> new ResourceNotFoundException("Tutor profile not found"));
 
@@ -66,7 +76,7 @@ public class TutorService {
     }
 
     public TutorProfileDto getTutorById(Long id) {
-
+        log.debug("Fetching tutor by id: {}", id);
         Tutor tutor = tutorRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tutor", id));
 
@@ -75,9 +85,13 @@ public class TutorService {
 
 
     public List<TutorProfileDto> searchTutors(TutorSearchRequestDto request) {
+        log.debug("Tutor search: courseCode={}, faculty={}, location={}, remote={}, sort={}",
+                request.getCourseCode(), request.getFaculty(), request.getLocation(),
+                request.getRemote(), request.getSort());
+
         Sort sort = getSort(request.getSort());
 
-        return tutorRepository.findAll(sort)
+        List<TutorProfileDto> results = tutorRepository.findAll(sort)
                 .stream()
                 .filter(tutor -> matchesCourse(tutor, request.getCourseCode()))
                 .filter(tutor -> matchesFaculty(tutor, request.getFaculty()))
@@ -86,6 +100,8 @@ public class TutorService {
                 .filter(tutor -> matchesDistance(tutor, request, MAX_DISTANCE_KM))
                 .map(tutorMapper::toDto)
                 .toList();
+        log.debug("Tutor search returned {} results", results.size());
+        return results;
     }
 
     private void applyProfileUpdates(Tutor tutor, TutorProfileRequestDto dto) {
@@ -231,6 +247,7 @@ public class TutorService {
     }
 
     public void updateProfileImage(User user, String key) {
+        log.info("Updating profile image for user {}: {}", user.getId(), key);
         Tutor tutor = tutorRepository.findByUser(user)
                 .orElseThrow(() -> new ResourceNotFoundException("Tutor profile not found"));
 
@@ -239,8 +256,9 @@ public class TutorService {
     }
 
     public void handleEnquiry(Long tutorId, EnquiryRequestDto dto, User student) {
+        log.info("User {} sending enquiry to tutor {}", student.getId(), tutorId);
         Tutor tutor = tutorRepository.findById(tutorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Tutor profile not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Tutor", tutorId));
 
         String studentName = student.getFirstname() + " " + student.getLastname();
         String studentEmail = student.getEmail();
@@ -258,7 +276,9 @@ public class TutorService {
 
         try {
             emailService.sendVerificationEmail(tutorEmail, subject, body);
+            log.info("Enquiry email sent from user {} to tutor {}", student.getId(), tutorId);
         } catch (Exception e) {
+            log.error("Failed to send enquiry email from user {} to tutor {}", student.getId(), tutorId, e);
             throw new EmailSendException("Failed to send enquiry email");
         }
     }

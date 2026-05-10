@@ -2,6 +2,8 @@ package com.tl.tutor_link.image.service;
 
 import com.tl.tutor_link.common.exception.FileUploadException;
 import org.apache.tomcat.util.http.fileupload.FileUpload;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,6 +22,7 @@ import java.util.UUID;
 
 @Service
 public class ImageUploadService {
+    private static final Logger log = LoggerFactory.getLogger(ImageUploadService.class);
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
 
@@ -41,6 +44,8 @@ public class ImageUploadService {
 
 
     public String uploadProfileImage(MultipartFile file, Long userId) throws IOException {
+        log.info("User {} uploading profile image: {} bytes, type {}",
+                userId, file.getSize(), file.getContentType());
         validateFile(file);
 
         String extension = getExtension(file.getOriginalFilename());
@@ -56,7 +61,7 @@ public class ImageUploadService {
                 putObjectRequest,
                 RequestBody.fromBytes(file.getBytes())
         );
-
+        log.info("Profile image uploaded: {}", key);
         return key;
     }
 
@@ -104,8 +109,9 @@ public class ImageUploadService {
                     .bucket(bucketName)
                     .key(key)
                     .build());
+            log.debug("S3 object deleted: {}", key);
         } catch (Exception e) {
-            System.err.println("Failed to delete old image: " + key + " — " + e.getMessage());
+            log.warn("Failed to delete S3 object: {}", key, e);
         }
     }
 }
