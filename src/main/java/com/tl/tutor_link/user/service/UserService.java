@@ -4,12 +4,14 @@ import com.tl.tutor_link.user.model.Role;
 import com.tl.tutor_link.user.model.User;
 import com.tl.tutor_link.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class UserService {
+
 
     private final UserRepository userRepository;
 
