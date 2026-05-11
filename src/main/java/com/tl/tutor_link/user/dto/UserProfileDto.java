@@ -6,11 +6,15 @@ import lombok.Setter;
 
 import java.util.Set;
 
-
+/**
+ * Public representation of a user. Used in API responses where user details
+ * need to be exposed without leaking sensitive fields like passwords or
+ * verification codes
+ */
 @Getter
 @Setter
 public class UserProfileDto {
-    private long id;
+    private Long id;
     private String firstname;
     private String lastname;
     private String username;

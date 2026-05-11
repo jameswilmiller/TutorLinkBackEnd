@@ -7,13 +7,14 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * A language a tutor speaks, with their proficiency level.
+ */
 @Getter
 @Setter
 public class TutorLanguageDto {
+
     private Long id;
-    @NotBlank(message = "Language is required")
-    @Size(max = 50, message = "Language must be at most 50 characters")
     private String language;
-    @NotNull(message = "Language level is required")
     private LanguageLevel level;
 }

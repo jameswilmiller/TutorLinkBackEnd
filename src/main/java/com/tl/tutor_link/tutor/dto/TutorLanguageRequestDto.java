@@ -7,12 +7,17 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * Submitted when a tutor adds or updates a language on their profile.
+ */
 @Getter
 @Setter
 public class TutorLanguageRequestDto {
+
     @NotBlank(message = "Language is required")
     @Size(max = 50, message = "Language must be at most 50 characters")
     private String language;
+
     @NotNull(message = "Language level is required")
     private LanguageLevel level;
 }

@@ -7,9 +7,26 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * New user signup. Password must contain at least one uppercase letter and
+ * one digit. Username is restricted to alphanumerics and underscores so it
+ * can safely appear in URLs without escaping.
+ */
 @Getter
 @Setter
 public class RegisterUserDto {
+    @NotBlank(message = "First name is required")
+    @Size(max = 50, message = "First name must be at most 50 characters")
+    private String firstname;
+
+    @NotBlank(message = "Last name is required")
+    @Size(max = 50, message = "Last name must be at most 50 characters")
+    private String lastname;
+
+    @NotBlank(message = "Username is required")
+    @Size(min = 3, max = 30, message = "Username must be between 3 and 30 characters")
+    @Pattern(regexp = "^[a-zA-Z0-9_]+$", message = "Username can only contain letters, numbers, and underscores")
+    private String username;
 
     @NotBlank(message= "Email is required")
     @Email(message = "Must be a valid email address")
@@ -22,17 +39,4 @@ public class RegisterUserDto {
             message = "Password must contain at least one uppercase letter and one number"
     )
     private String password;
-
-    @NotBlank(message = "Username is required")
-    @Size(min = 3, max = 30, message = "Username must be between 3 and 30 characters")
-    @Pattern(regexp = "^[a-zA-Z0-9_]+$", message = "Username can only contain letters, numbers, and underscores")
-    private String username;
-
-    @NotBlank(message = "First name is required")
-    @Size(max = 50, message = "First name must be at most 50 characters")
-    private String firstname;
-
-    @NotBlank(message = "Last name is required")
-    @Size(max = 50, message = "Last name must be at most 50 characters")
-    private String lastname;
 }

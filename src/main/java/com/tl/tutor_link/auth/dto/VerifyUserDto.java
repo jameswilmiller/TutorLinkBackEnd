@@ -6,12 +6,18 @@ import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * Email verification request. The verification code is the 6-digit number
+ * emailed to the user after signup.
+ */
 @Getter
 @Setter
 public class VerifyUserDto {
+
     @NotBlank(message = "Email is required")
     @Email(message = "Must be a valid email address")
     private String email;
+
     @NotBlank(message = "Verification code is required")
     @Pattern(regexp = "^\\d{6}$", message = "Verification code must be 6 digits")
     private String verificationCode;
