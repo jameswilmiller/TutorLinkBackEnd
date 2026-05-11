@@ -5,6 +5,7 @@ import com.tl.tutor_link.user.model.User;
 import com.tl.tutor_link.user.service.UserService;
 import com.tl.tutor_link.user.mapper.UserMapper;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,8 +15,8 @@ import java.util.List;
  * User-related endpoints: fetching the current user, listing users, and
  * promoting a user to a tutor role.
  */
-@RequestMapping("/users")
 @RestController
+@RequestMapping("/users")
 public class UserController {
     private final UserService userService;
     private final UserMapper userMapper;
@@ -36,9 +37,9 @@ public class UserController {
      * Get all users (admin use)
      */
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserProfileDto>> allUsers() {
-        List <UserProfileDto> users = userService.allUsers()
-                .stream()
+        List <UserProfileDto> users = userService.allUsers().stream()
                 .map(userMapper::toDto)
                 .toList();
         return ResponseEntity.ok(users);
@@ -48,11 +49,9 @@ public class UserController {
      * add the tutor role to the current user
      */
     @PostMapping("/me/become-tutor")
-    public ResponseEntity<UserProfileDto> becomeTutor(
-            @AuthenticationPrincipal User currentUser
-    ) {
+    public ResponseEntity<UserProfileDto> becomeTutor( @AuthenticationPrincipal User currentUser) {
         User updatedUser = userService.addTutorRole(currentUser);
-        return ResponseEntity.ok(userMapper.toDto(currentUser));
+        return ResponseEntity.ok(userMapper.toDto(updatedUser));
     }
 
 }

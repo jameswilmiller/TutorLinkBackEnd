@@ -9,9 +9,12 @@ import java.util.Optional;
 
 @Repository
 public interface CourseRepository extends JpaRepository<Course, Long> {
+
     List<Course> findByCourseCodeContainingIgnoreCaseOrCourseNameContainingIgnoreCase(
-            String courseCode, String courseName
+            String courseCode,
+            String courseName
     );
     List<Course> findByFaculty(String faculty);
+
     Optional<Course> findByCourseCode(String courseCode);
 }

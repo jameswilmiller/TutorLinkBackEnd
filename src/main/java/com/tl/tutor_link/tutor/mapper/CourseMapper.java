@@ -6,8 +6,13 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class CourseMapper {
+
     public CourseDto toDto(Course course) {
-        if (course == null) return null;
+
+        if (course == null) {
+            return null;
+        }
+
         CourseDto dto = new CourseDto();
         dto.setId(course.getId());
         dto.setCourseCode(course.getCourseCode());

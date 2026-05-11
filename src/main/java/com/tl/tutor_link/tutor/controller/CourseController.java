@@ -1,6 +1,7 @@
 package com.tl.tutor_link.tutor.controller;
 
 import com.tl.tutor_link.tutor.dto.CourseDto;
+import com.tl.tutor_link.tutor.model.Faculty;
 import com.tl.tutor_link.tutor.service.CourseService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

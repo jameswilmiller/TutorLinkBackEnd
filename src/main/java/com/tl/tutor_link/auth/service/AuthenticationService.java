@@ -17,7 +17,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.tl.tutor_link.common.config.AppConstants;
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.Random;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -154,7 +153,7 @@ public class AuthenticationService {
             """.formatted(user.getUsername(), verificationCode);
 
         try {
-            emailService.sendVerificationEmail(user.getEmail(), subject, htmlMessage);
+            emailService.sendHtmlEmail(user.getEmail(), subject, htmlMessage);
         } catch (MessagingException e) {
             log.error("Failed to send verification email to {}", user.getEmail(), e);
             throw new EmailSendException("Failed to send verification email");

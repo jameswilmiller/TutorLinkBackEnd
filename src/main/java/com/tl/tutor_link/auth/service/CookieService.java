@@ -5,7 +5,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
-
+/**
+ * Builds and reads the refresh-token cookie. Refresh tokens are httpOnly so
+ * they can't be read by JavaScript (XSS protection), and the secure flag is
+ * driven by config so the cookie can be sent over plain HTTP in dev but
+ * requires HTTPS in production.
+ */
 @Service
 public class CookieService {
 
@@ -30,6 +35,7 @@ public class CookieService {
                 .httpOnly(true)
                 .secure(secureCookie)
                 .sameSite("Lax")
+                .path("/")
                 .maxAge(0)
                 .build();
     }
@@ -39,12 +45,11 @@ public class CookieService {
             return null;
         }
 
-        for (Cookie cookie : request.getCookies() ) {
+        for (Cookie cookie : request.getCookies()) {
             if (refreshCookieName.equals(cookie.getName())) {
                 return cookie.getValue();
             }
         }
         return null;
     }
-
 }

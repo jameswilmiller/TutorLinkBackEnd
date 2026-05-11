@@ -13,8 +13,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface TutorRepository extends JpaRepository<Tutor,Long>, JpaSpecificationExecutor<Tutor> {
+public interface TutorRepository extends JpaRepository<Tutor, Long>, JpaSpecificationExecutor<Tutor> {
+
     Optional<Tutor> findByUser(User user);
+
     /**
      * Returns IDs of tutors within the given radius of the provided coordinates.
      * Uses the Haversine formula directly in SQL.

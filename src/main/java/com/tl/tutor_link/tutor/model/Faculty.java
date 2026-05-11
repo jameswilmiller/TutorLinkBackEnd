@@ -1,5 +1,9 @@
 package com.tl.tutor_link.tutor.model;
 
+/**
+ * The five UQ faculties. Used to filter tutors by academic area and to
+ * categorise courses.
+ */
 public enum Faculty {
     BUSINESS_ECONOMICS_LAW,
     ENGINEERING_ARCHITECTURE_IT,

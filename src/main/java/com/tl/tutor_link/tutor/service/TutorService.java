@@ -22,8 +22,15 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.tl.tutor_link.common.config.AppConstants;
+import org.springframework.web.util.HtmlUtils;
+
 import java.util.List;
 
+/**
+ * Tutor profile lifecycle and discovery. Owns creating and updating tutor
+ * profiles, searching with dynamic filters and distance, image management,
+ * and routing student enquiries to the tutor's email.
+ */
 @Service
 public class TutorService {
 
@@ -34,12 +41,20 @@ public class TutorService {
     private final CourseRepository courseRepository;
     private final EmailService emailService;
 
-    public TutorService(TutorRepository tutorRepository, TutorMapper tutorMapper, CourseRepository courseRepository, EmailService emailService) {
+    public TutorService(TutorRepository tutorRepository,
+                        TutorMapper tutorMapper,
+                        CourseRepository courseRepository,
+                        EmailService emailService
+    ) {
         this.tutorRepository = tutorRepository;
         this.tutorMapper = tutorMapper;
         this.courseRepository = courseRepository;
         this.emailService = emailService;
     }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Profile lifecycle
+    // ----------------------------------------------------------------------------------------------------------------
 
     @Transactional
     public TutorProfileDto createTutorProfile(User user, TutorProfileRequestDto dto) {
@@ -58,52 +73,107 @@ public class TutorService {
         log.info("Tutor profile {} created for user {}", savedTutor.getId(), user.getId());
         return tutorMapper.toDto(savedTutor);
     }
+
     @Transactional
     public TutorProfileDto updateTutorProfile(User user, TutorProfileRequestDto dto) {
         log.info("User {} updating tutor profile", user.getId());
 
-        Tutor tutor = tutorRepository.findByUser(user)
-                .orElseThrow(() -> new ResourceNotFoundException("Tutor profile not found"));
-
+        Tutor tutor = findByUserOrThrow(user);
         applyProfileUpdates(tutor, dto);
-        Tutor savedTutor = tutorRepository.save(tutor);
-        log.info("Tutor profile {} updated", savedTutor.getId());
-        return tutorMapper.toDto(savedTutor);
+
+        Tutor saved = tutorRepository.save(tutor);
+        log.info("Tutor profile {} updated", saved.getId());
+        return tutorMapper.toDto(saved);
     }
+
+    @Transactional
+    public void updateProfileImage(User user, String key) {
+        log.info("Updating profile image for user {}: {}", user.getId(), key);
+
+        Tutor tutor = findByUserOrThrow(user);
+        tutor.setProfileImageKey(key);
+        tutorRepository.save(tutor);
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Profile reads
+    // ----------------------------------------------------------------------------------------------------------------
+
     @Transactional(readOnly = true)
     public TutorProfileDto getMyTutorProfile(User user) {
         log.debug("Fetching tutor profile for user {}", user.getId());
-
-        Tutor tutor = tutorRepository.findByUser(user)
-                .orElseThrow(() -> new ResourceNotFoundException("Tutor profile not found"));
-
-        return tutorMapper.toDto(tutor);
+        return tutorMapper.toDto(findByUserOrThrow(user));
     }
+
     @Transactional(readOnly = true)
     public TutorProfileDto getTutorById(Long id) {
         log.debug("Fetching tutor by id: {}", id);
 
-        Tutor tutor = tutorRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Tutor", id));
+        Tutor tutor = findByIdOrThrow(id);
 
         return tutorMapper.toDto(tutor);
     }
+
     @Transactional(readOnly = true)
     public Page<TutorProfileDto> searchTutors(TutorSearchRequestDto request, Pageable pageable) {
         log.debug("Tutor search: courseCode={}, faculty={}, location={}, remote={}, page={}, size={}",
                 request.getCourseCode(), request.getFaculty(), request.getLocation(),
                 request.getRemote(), pageable.getPageNumber(), pageable.getPageSize());
 
+       Specification<Tutor> spec = buildSearchSpecification(request);
+       Page<Tutor> tutors = tutorRepository.findAll(spec, pageable);
+
+       log.debug("Tutor search returned {} of {} total results",
+               tutors.getNumberOfElements(), tutors.getTotalElements());
+       return tutors.map(tutorMapper::toDto);
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Enquiries -
+    // ----------------------------------------------------------------------------------------------------------------
+
+    @Transactional
+    public void handleEnquiry(Long id, EnquiryRequestDto dto, User student) {
+        log.info("User {} sending enquiry to tutor {}", student.getId(), id);
+
+        Tutor tutor = findByIdOrThrow(id);
+
+        String subject = "New TutorLink enquiry from " + fullName(student);
+        String body = buildEnquiryEmailBody(dto, student);
+
+        try {
+            emailService.sendHtmlEmail(tutor.getUser().getEmail(), subject, body);
+            log.info("Enquiry email sent from user {} to tutor {}",
+                    student.getId(), id);
+        } catch (Exception e) {
+            log.error("Failed to send enquiry email from user {} to tutor {}",
+                    student.getId(), id, e);
+            throw new EmailSendException("Failed to send enquiry email");
+        }
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Private helpers
+    // ----------------------------------------------------------------------------------------------------------------
+
+    private Tutor findByUserOrThrow(User user) {
+        return tutorRepository.findByUser(user)
+                .orElseThrow(() -> new ResourceNotFoundException("Tutor profile not found"));
+    }
+
+    private Tutor findByIdOrThrow(Long id) {
+        return tutorRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Tutor", id));
+    }
+
+    private Specification<Tutor> buildSearchSpecification(TutorSearchRequestDto request) {
         Specification<Tutor> spec = Specification
                 .where(TutorSpecifications.hasCourseCode(request.getCourseCode()))
                 .and(TutorSpecifications.hasFaculty(request.getFaculty()))
                 .and(TutorSpecifications.locationContains(request.getLocation()))
                 .and(TutorSpecifications.isRemote(request.getRemote()));
 
-        // Distance filtering uses a native query (Haversine formula) for the IDs,
-        // then combines with the other specifications via an IN clause.
-        if (request.getLatitude() != null && request.getLongitude() != null
-                && !Boolean.TRUE.equals(request.getRemote())) {
+        if (shouldFilterByDistance(request)) {
             List<Long> nearbyIds = tutorRepository.findIdsWithinDistance(
                     request.getLatitude(),
                     request.getLongitude(),
@@ -112,108 +182,113 @@ public class TutorService {
             spec = spec.and(TutorSpecifications.idIn(nearbyIds));
         }
 
-        Page<Tutor> tutors = tutorRepository.findAll(spec, pageable);
-        log.debug("Tutor search returned {} of {} total results",
-                tutors.getNumberOfElements(), tutors.getTotalElements());
-        return tutors.map(tutorMapper::toDto);
+        return spec;
     }
-    @Transactional
-    public void updateProfileImage(User user, String key) {
-        log.info("Updating profile image for user {}: {}", user.getId(), key);
 
-        Tutor tutor = tutorRepository.findByUser(user)
-                .orElseThrow(() -> new ResourceNotFoundException("Tutor profile not found"));
-
-        tutor.setProfileImageKey(key);
-        tutorRepository.save(tutor);
-    }
-    @Transactional
-    public void handleEnquiry(Long tutorId, EnquiryRequestDto dto, User student) {
-        log.info("User {} sending enquiry to tutor {}", student.getId(), tutorId);
-
-        Tutor tutor = tutorRepository.findById(tutorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Tutor", tutorId));
-
-        String studentName = student.getFirstname() + " " + student.getLastname();
-        String studentEmail = student.getEmail();
-        String tutorEmail = tutor.getUser().getEmail();
-        String subject = "New TutorLink enquiry from " + studentName;
-
-        String body = "<h2>New booking request</h2>"
-                + "<p><strong>From:</strong> " + studentName + " (" + studentEmail + ")</p>"
-                + "<p><strong>Course:</strong> " + dto.getCourse() + "</p>"
-                + "<p><strong>Session type:</strong> " + dto.getSessionType() + "</p>"
-                + "<p><strong>Message:</strong></p>"
-                + "<p>" + (dto.getMessage() != null ? dto.getMessage() : "No message provided") + "</p>"
-                + "<hr>"
-                + "<p>Reply directly to " + studentEmail + " to arrange the session.</p>";
-
-        try {
-            emailService.sendVerificationEmail(tutorEmail, subject, body);
-            log.info("Enquiry email sent from user {} to tutor {}", student.getId(), tutorId);
-        } catch (Exception e) {
-            log.error("Failed to send enquiry email from user {} to tutor {}", student.getId(), tutorId, e);
-            throw new EmailSendException("Failed to send enquiry email");
-        }
+    private boolean shouldFilterByDistance(TutorSearchRequestDto request) {
+        return request.getLatitude() != null
+                && request.getLongitude() != null
+                && !Boolean.TRUE.equals(request.getRemote());
     }
 
     private void applyProfileUpdates(Tutor tutor, TutorProfileRequestDto dto) {
+        applyBasicFields(tutor, dto);
+        applyFaculties(tutor, dto);
+        applyCourses(tutor, dto);
+        applyLanguages(tutor, dto);
+        applyStyles(tutor, dto);
+        applyCredentials(tutor, dto);
+    }
+
+    private void applyBasicFields(Tutor tutor, TutorProfileRequestDto dto) {
         tutor.setBio(dto.getBio());
         tutor.setTagline(dto.getTagline());
         tutor.setLocation(dto.getLocation());
         tutor.setRemote(dto.isRemote());
         tutor.setHourlyRate(dto.getHourlyRate());
-        tutor.setProfileImageKey(dto.getProfileImageKey());
         tutor.setLongitude(dto.getLongitude());
         tutor.setLatitude(dto.getLatitude());
+    }
+
+    private void applyFaculties(Tutor tutor, TutorProfileRequestDto dto) {
+        if (dto.getFaculties() == null) return;
+        tutor.getFaculties().clear();
+        tutor.getFaculties().addAll(dto.getFaculties());
+    }
+
+    private void applyCourses(Tutor tutor, TutorProfileRequestDto dto) {
+        if (dto.getCourseIds() == null) return;
+
+        List<Course> courses = dto.getCourseIds().stream()
+                .map(id -> courseRepository.findById(id)
+                        .orElseThrow(() -> new ResourceNotFoundException("Course", id)))
+                .toList();
+
+        tutor.getCourses().clear();
+        tutor.getCourses().addAll(courses);
+    }
+
+    private void applyLanguages(Tutor tutor, TutorProfileRequestDto dto) {
+        if (dto.getLanguages() == null) return;
 
         tutor.getLanguages().clear();
+        dto.getLanguages().forEach(l -> {
+            TutorLanguage lang = new TutorLanguage();
+            lang.setTutor(tutor);
+            lang.setLanguage(l.getLanguage());
+            lang.setLevel(l.getLevel());
+            tutor.getLanguages().add(lang);
+        });
+    }
 
-        if (dto.getFaculties() != null) {
-            tutor.getFaculties().clear();
-            tutor.getFaculties().addAll(dto.getFaculties());
-        }
-
-        if (dto.getCourseIds() != null) {
-            List<Course> courses = dto.getCourseIds().stream()
-                    .map(id -> courseRepository.findById(id)
-                            .orElseThrow(() -> new ResourceNotFoundException("Course", id)))
-                    .toList();
-            tutor.getCourses().clear();
-            tutor.getCourses().addAll(courses);
-        }
-
-        if (dto.getLanguages() != null) {
-            dto.getLanguages().forEach(l -> {
-                TutorLanguage lang = new TutorLanguage();
-                lang.setTutor(tutor);
-                lang.setLanguage(l.getLanguage());
-                lang.setLevel(l.getLevel());
-                tutor.getLanguages().add(lang);
-            });
-        }
+    private void applyStyles(Tutor tutor, TutorProfileRequestDto dto) {
+        if (dto.getStyles() == null) return;
 
         tutor.getStyles().clear();
-        if (dto.getStyles() != null) {
-            dto.getStyles().forEach(s -> {
-                TutorStyle style = new TutorStyle();
-                style.setTutor(tutor);
-                style.setLabel(s.getLabel());
-                style.setDescription(s.getDescription());
-                tutor.getStyles().add(style);
-            });
-        }
+        dto.getStyles().forEach(s -> {
+            TutorStyle style = new TutorStyle();
+            style.setTutor(tutor);
+            style.setLabel(s.getLabel());
+            style.setDescription(s.getDescription());
+            tutor.getStyles().add(style);
+        });
+    }
+
+    private void applyCredentials(Tutor tutor, TutorProfileRequestDto dto) {
+        if (dto.getCredentials() == null) return;
 
         tutor.getCredentials().clear();
-        if (dto.getCredentials() != null) {
-            dto.getCredentials().forEach(c -> {
-                TutorCredential cred = new TutorCredential();
-                cred.setTutor(tutor);
-                cred.setTitle(c.getTitle());
-                cred.setInstitution(c.getInstitution());
-                cred.setYear(c.getYear());
-                tutor.getCredentials().add(cred);
-            });
-        }
+        dto.getCredentials().forEach(c -> {
+            TutorCredential cred = new TutorCredential();
+            cred.setTutor(tutor);
+            cred.setTitle(c.getTitle());
+            cred.setInstitution(c.getInstitution());
+            cred.setYear(c.getYear());
+            tutor.getCredentials().add(cred);
+        });
     }
+
+    private String buildEnquiryEmailBody(EnquiryRequestDto dto, User student) {
+        String studentName = HtmlUtils.htmlEscape(fullName(student));
+        String studentEmail = HtmlUtils.htmlEscape(student.getEmail());
+        String course = HtmlUtils.htmlEscape(dto.getCourse());
+        String sessionType = HtmlUtils.htmlEscape(dto.getSessionType());
+        String message = HtmlUtils.htmlEscape(
+                dto.getMessage() != null ? dto.getMessage() : "No message provided"
+        );
+
+        return "<h2>New booking request</h2>"
+                + "<p><strong>From:</strong> " + studentName + " (" + studentEmail + ")</p>"
+                + "<p><strong>Course:</strong> " + course + "</p>"
+                + "<p><strong>Session type:</strong> " + sessionType + "</p>"
+                + "<p><strong>Message:</strong></p>"
+                + "<p>" + message + "</p>"
+                + "<hr>"
+                + "<p>Reply directly to " + studentEmail + " to arrange the session.</p>";
+    }
+
+    private String fullName(User user) {
+        return user.getFirstname() + " " + user.getLastname();
+    }
+
 }
