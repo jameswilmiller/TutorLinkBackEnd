@@ -7,6 +7,7 @@ import com.tl.tutor_link.auth.repository.RefreshTokenRepository;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,7 +22,7 @@ public class RefreshTokenService {
         this.refreshTokenRepository = refreshTokenRepository;
         this.jwtService = jwtService;
     }
-
+    @Transactional
     public RefreshToken createRefreshToken(User user){
         log.debug("Creating refresh token for user {}", user.getId());
         String token = jwtService.generateRefreshToken(user);
@@ -34,7 +35,7 @@ public class RefreshTokenService {
         );
         return refreshTokenRepository.save(refreshToken);
     }
-
+    @Transactional(readOnly = true)
     public RefreshToken validateStoredRefreshToken(String token) {
         RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
                 .orElseThrow(() -> {
@@ -53,14 +54,14 @@ public class RefreshTokenService {
         }
         return refreshToken;
     }
-
+    @Transactional
     public void revokeToken(String token) {
         refreshTokenRepository.findByToken(token).ifPresent(refreshToken -> {
             refreshToken.setRevoked(true);
             refreshTokenRepository.save(refreshToken);
         });
     }
-
+    @Transactional
     public void revokeAllUserTokens(User user) {
         List<RefreshToken> tokens = refreshTokenRepository.findAllByUser_IdAndRevokedFalse(user.getId());
         log.info("Revoking {} refresh tokens for user {}", tokens.size(), user.getId());

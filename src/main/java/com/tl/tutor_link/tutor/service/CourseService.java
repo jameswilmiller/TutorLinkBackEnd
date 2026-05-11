@@ -6,6 +6,7 @@ import com.tl.tutor_link.tutor.repository.CourseRepository;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -19,7 +20,7 @@ public class CourseService {
         this.courseRepository = courseRepository;
         this.courseMapper = courseMapper;
     }
-
+    @Transactional(readOnly = true)
     public List<CourseDto> search(String query) {
         log.debug("Course search: query={}", query);
         return courseRepository
@@ -28,7 +29,7 @@ public class CourseService {
                 .map(courseMapper::toDto)
                 .toList();
     }
-
+    @Transactional(readOnly = true)
     public List<CourseDto> getByFaculty(String faculty) {
         log.debug("Courses by faculty: {}", faculty);
         return courseRepository.findByFaculty(faculty)

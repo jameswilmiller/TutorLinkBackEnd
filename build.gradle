@@ -43,6 +43,7 @@ dependencies {
 	implementation 'io.jsonwebtoken:jjwt-jackson:0.13.0'
     implementation "software.amazon.awssdk:s3:2.31.67"
 	implementation 'com.bucket4j:bucket4j-core:8.10.1'
+	implementation 'org.apache.tika:tika-core:2.9.2'
 }
 
 tasks.named('test') {

@@ -1,4 +1,4 @@
-package com.tl.tutor_link.config;
+package com.tl.tutor_link.common.security;
 
 import com.tl.tutor_link.auth.service.JwtService;
 import jakarta.servlet.FilterChain;

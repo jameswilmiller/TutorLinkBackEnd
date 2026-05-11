@@ -1,5 +1,6 @@
 package com.tl.tutor_link.tutor.controller;
 
+import com.tl.tutor_link.common.config.AppConstants;
 import com.tl.tutor_link.tutor.dto.EnquiryRequestDto;
 import com.tl.tutor_link.tutor.dto.TutorProfileDto;
 import com.tl.tutor_link.tutor.dto.TutorProfileRequestDto;
@@ -9,18 +10,18 @@ import com.tl.tutor_link.tutor.service.TutorService;
 import com.tl.tutor_link.user.model.User;
 
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 /**
- * Handles tutor related endpoints such as tutor profile manage, tutor browsing and tutor search.
+ * Handles tutor related endpoints such as tutor profile management, tutor browsing and tutor search.
  */
 @RestController
 @RequestMapping("/tutors")
@@ -29,7 +30,6 @@ public class TutorController {
 
     public TutorController(TutorService tutorService) {
         this.tutorService = tutorService;
-
     }
 
     @PutMapping("/me/profile")
@@ -48,14 +48,16 @@ public class TutorController {
     }
 
     @GetMapping
-    public ResponseEntity<List<TutorProfileDto>> getTutors(
+    public ResponseEntity<Page<TutorProfileDto>> getTutors(
             @RequestParam(required = false) String courseCode,
             @RequestParam(required = false) Faculty faculty,
             @RequestParam(required = false) String location,
             @RequestParam(required = false) Double latitude,
             @RequestParam(required = false) Double longitude,
             @RequestParam(required = false) Boolean remote,
-            @RequestParam(defaultValue = "newest") String sort
+            @RequestParam(defaultValue = "newest") String sort,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "" + AppConstants.DEFAULT_PAGE_SIZE) int size
     ) {
         TutorSearchRequestDto request = new TutorSearchRequestDto();
         request.setCourseCode(courseCode);
@@ -66,14 +68,14 @@ public class TutorController {
         request.setRemote(remote);
         request.setSort(sort);
 
-        return ResponseEntity.ok(tutorService.searchTutors(request));
+        Pageable pageable = PageRequest.of(page, size, getSortOrder(sort));
+        return ResponseEntity.ok(tutorService.searchTutors(request, pageable));
     }
 
     @GetMapping("/me/profile")
     public ResponseEntity<TutorProfileDto> getMyTutorProfile(@AuthenticationPrincipal User user) {
         return ResponseEntity.ok(tutorService.getMyTutorProfile(user));
     }
-
 
     @GetMapping("/{id}")
     public ResponseEntity<TutorProfileDto> getTutorById(@PathVariable Long id) {
@@ -88,5 +90,16 @@ public class TutorController {
     ) {
         tutorService.handleEnquiry(id, dto, user);
         return ResponseEntity.ok(Map.of("status", "sent"));
+    }
+
+    private Sort getSortOrder(String sort) {
+        if (sort == null || sort.isBlank()) {
+            return Sort.by(Sort.Direction.DESC, "id");
+        }
+        return switch (sort) {
+            case "price_low" -> Sort.by(Sort.Direction.ASC, "hourlyRate");
+            case "price_high" -> Sort.by(Sort.Direction.DESC, "hourlyRate");
+            default -> Sort.by(Sort.Direction.DESC, "id");
+        };
     }
 }

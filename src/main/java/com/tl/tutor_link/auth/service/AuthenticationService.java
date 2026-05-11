@@ -15,12 +15,13 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
+import com.tl.tutor_link.common.config.AppConstants;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Random;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthenticationService {
@@ -40,12 +41,12 @@ public class AuthenticationService {
         this.authenticationManager = authenticationManager;
         this.emailService = emailService;
     }
-
+    @Transactional
     public User signup(RegisterUserDto input) {
         log.info("Signup attempt for email: {}", input.getEmail());
         User user = new User(input.getFirstname(), input.getLastname(),input.getUsername(), input.getEmail(), passwordEncoder.encode(input.getPassword()));
         user.setVerificationCode(generateVerificationCode());
-        user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
+        user.setVerificationCodeExpiresAt(LocalDateTime.now().plus(AppConstants.VERIFICATION_CODE_TTL));
         user.setEnabled(false);
         user.getRoles().add(Role.STUDENT);
         sendVerificationEmail(user);
@@ -53,7 +54,7 @@ public class AuthenticationService {
         log.info("User {} created successfully", saved.getId());
         return saved;
     }
-
+    @Transactional(readOnly = true)
     public User authenticate(LoginUserDto input) {
         log.debug("Login attempt for email: {}", input.getEmail());
 
@@ -77,7 +78,7 @@ public class AuthenticationService {
         log.info("User {} logged in", user.getId());
         return user;
     }
-
+    @Transactional
     public void verifyUser(VerifyUserDto input) {
         log.debug("Verification attempt for email: {}", input.getEmail());
         User user = userRepository.findByEmail(input.getEmail())
@@ -100,7 +101,7 @@ public class AuthenticationService {
         log.info("User {} verified successfully", user.getId());
 
     }
-
+    @Transactional
     public void resendVerificationCode(String email) {
         log.info("Resend verification request for email: {}", email);
         User user = userRepository.findByEmail(email)

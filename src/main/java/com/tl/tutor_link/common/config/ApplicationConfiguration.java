@@ -1,4 +1,4 @@
-package com.tl.tutor_link.config;
+package com.tl.tutor_link.common.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tl.tutor_link.user.repository.UserRepository;

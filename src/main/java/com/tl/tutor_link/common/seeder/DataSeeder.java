@@ -1,4 +1,4 @@
-package com.tl.tutor_link.config;
+package com.tl.tutor_link.common.seeder;
 
 import com.tl.tutor_link.tutor.model.*;
 import com.tl.tutor_link.tutor.repository.CourseRepository;

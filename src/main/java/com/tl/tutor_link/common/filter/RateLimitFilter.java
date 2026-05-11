@@ -1,9 +1,8 @@
-package com.tl.tutor_link.config;
+package com.tl.tutor_link.common.filter;
 
 import io.github.bucket4j.Bucket;
 
 import io.github.bucket4j.Bandwidth;
-import io.github.bucket4j.Bucket;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

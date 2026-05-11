@@ -6,10 +6,10 @@ import lombok.Setter;
 
 import java.util.Set;
 
+
 @Getter
 @Setter
 public class UserProfileDto {
-
     private long id;
     private String firstname;
     private String lastname;

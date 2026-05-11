@@ -1,4 +1,4 @@
-package com.tl.tutor_link.config;
+package com.tl.tutor_link.common.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

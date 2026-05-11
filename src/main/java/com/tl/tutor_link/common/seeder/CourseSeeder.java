@@ -1,4 +1,4 @@
-package com.tl.tutor_link.config;
+package com.tl.tutor_link.common.seeder;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
