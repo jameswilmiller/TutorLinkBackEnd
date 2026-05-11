@@ -5,9 +5,8 @@ import com.tl.tutor_link.user.model.User;
 import org.springframework.stereotype.Component;
 
 /**
- * Maps User entity objects to UserProfileDto objects.
- *
- * This keeps controllers clean and separates transformation logic from business logic
+ * Maps User entities to UserProfileDto, exposing only public fields.
+ * Keeps controllers focused on routing and out of transformation logic.
  */
 @Component
 public class UserMapper {
@@ -16,11 +15,9 @@ public class UserMapper {
         dto.setId(user.getId());
         dto.setFirstname(user.getFirstname());
         dto.setLastname(user.getLastname());
+        dto.setUsername(user.getDisplayUsername());
         dto.setEmail(user.getEmail());
         dto.setRoles(user.getRoles());
-        dto.setUsername(user.getDisplayUsername());
-
         return dto;
     }
-
 }

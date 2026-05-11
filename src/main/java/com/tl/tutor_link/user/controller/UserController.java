@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * Handles user related endpoints such as retrieving the current user,
- * listing users, and updating roles
+ * User-related endpoints: fetching the current user, listing users, and
+ * promoting a user to a tutor role.
  */
 @RequestMapping("/users")
 @RestController
