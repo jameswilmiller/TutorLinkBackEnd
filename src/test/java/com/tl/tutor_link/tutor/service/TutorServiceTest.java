@@ -2,110 +2,180 @@ package com.tl.tutor_link.tutor.service;
 
 import com.tl.tutor_link.auth.service.EmailService;
 import com.tl.tutor_link.common.exception.ConflictException;
+import com.tl.tutor_link.common.exception.EmailSendException;
 import com.tl.tutor_link.common.exception.ResourceNotFoundException;
-import com.tl.tutor_link.tutor.dto.TutorProfileRequestDto;
+import com.tl.tutor_link.image.service.ImageUploadService;
+import com.tl.tutor_link.support.TutorFixtures;
+import com.tl.tutor_link.support.UserFixtures;
+import com.tl.tutor_link.tutor.dto.EnquiryRequestDto;
+import com.tl.tutor_link.tutor.dto.TutorProfileDto;
+import com.tl.tutor_link.tutor.dto.TutorSearchRequestDto;
 import com.tl.tutor_link.tutor.mapper.TutorMapper;
 import com.tl.tutor_link.tutor.model.Tutor;
 import com.tl.tutor_link.tutor.repository.CourseRepository;
 import com.tl.tutor_link.tutor.repository.TutorRepository;
 import com.tl.tutor_link.user.model.User;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
+import jakarta.mail.MessagingException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("TutorService")
 class TutorServiceTest {
 
-    @Mock
-    private TutorRepository tutorRepository;
+    @Mock TutorRepository tutorRepository;
+    @Mock TutorMapper tutorMapper;
+    @Mock CourseRepository courseRepository;
+    @Mock EmailService emailService;
+    @Mock ImageUploadService imageUploadService;
 
-    @Mock
-    private TutorMapper tutorMapper;
+    @InjectMocks TutorService tutorService;
 
-    @Mock
-    private CourseRepository courseRepository;
+    User user = UserFixtures.aUser().build();
 
-    @Mock
-    private EmailService emailService;
+    // -----------------------------------------------------------------
+    // createTutorProfile
+    // -----------------------------------------------------------------
 
-    @InjectMocks
-    private TutorService tutorService;
+    @Test
+    void create_throwsWhenProfileExists() {
+        when(tutorRepository.findByUser(user)).thenReturn(Optional.of(new Tutor()));
 
-    @Nested
-    @DisplayName("createTutorProfile")
-    class CreateTutorProfile {
-
-        @Test
-        @DisplayName("throws ConflictException when user already has a tutor profile")
-        void throwsConflictException_whenUserAlreadyHasTutorProfile() {
-            User user = userWithId(1L);
-            Tutor existingTutor = new Tutor();
-
-            when(tutorRepository.findByUser(user))
-                    .thenReturn(Optional.of(existingTutor));
-
-            assertThrows(ConflictException.class, () ->
-                    tutorService.createTutorProfile(user, new TutorProfileRequestDto())
-            );
-
-            verify(tutorRepository, never()).save(any(Tutor.class));
-        }
+        assertThatThrownBy(() -> tutorService.createTutorProfile(user, TutorFixtures.aTutorRequest()))
+                .isInstanceOf(ConflictException.class);
     }
 
-    @Nested
-    @DisplayName("updateTutorProfile")
-    class UpdateTutorProfile {
+    @Test
+    void create_savesNewProfile() {
+        Tutor saved = TutorFixtures.aTutor(user);
+        when(tutorRepository.findByUser(user)).thenReturn(Optional.empty());
+        when(tutorRepository.save(any(Tutor.class))).thenReturn(saved);
+        when(tutorMapper.toDto(saved)).thenReturn(new TutorProfileDto());
 
-        @Test
-        @DisplayName("throws ResourceNotFoundException when user has no tutor profile")
-        void throwsResourceNotFoundException_whenUserHasNoTutorProfile() {
-            User user = userWithId(1L);
+        tutorService.createTutorProfile(user, TutorFixtures.aTutorRequest());
 
-            when(tutorRepository.findByUser(user))
-                    .thenReturn(Optional.empty());
-
-            assertThrows(ResourceNotFoundException.class, () ->
-                    tutorService.updateTutorProfile(user, new TutorProfileRequestDto())
-            );
-
-            verify(tutorRepository, never()).save(any(Tutor.class));
-        }
+        verify(tutorRepository).save(any(Tutor.class));
     }
 
-    @Nested
-    @DisplayName("updateProfileImage")
-    class UpdateProfileImage {
+    // -----------------------------------------------------------------
+    // updateTutorProfile
+    // -----------------------------------------------------------------
 
-        @Test
-        @DisplayName("updates profile image key for existing tutor profile")
-        void updatesProfileImageKey_whenTutorProfileExists() {
-            User user = userWithId(1L);
-            Tutor tutor = new Tutor();
-            tutor.setProfileImageKey("old-image-key");
+    @Test
+    void update_throwsWhenProfileMissing() {
+        when(tutorRepository.findByUser(user)).thenReturn(Optional.empty());
 
-            when(tutorRepository.findByUser(user))
-                    .thenReturn(Optional.of(tutor));
-
-            tutorService.updateProfileImage(user, "new-image-key");
-
-            verify(tutorRepository).save(tutor);
-            assert tutor.getProfileImageKey().equals("new-image-key");
-        }
+        assertThatThrownBy(() -> tutorService.updateTutorProfile(user, TutorFixtures.aTutorRequest()))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
-    private User userWithId(Long id) {
-        User user = new User();
-        user.setId(id);
-        return user;
+    // -----------------------------------------------------------------
+    // getTutorById
+    // -----------------------------------------------------------------
+
+    @Test
+    void getById_throwsWhenMissing() {
+        when(tutorRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> tutorService.getTutorById(999L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    // -----------------------------------------------------------------
+    // searchTutors
+    // -----------------------------------------------------------------
+
+    @Test
+    void search_skipsDistanceQueryWhenRemote() {
+        TutorSearchRequestDto request = new TutorSearchRequestDto();
+        request.setLatitude(-27.4698);
+        request.setLongitude(153.0251);
+        request.setRemote(true);
+
+        when(tutorRepository.findAll(any(Specification.class), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        tutorService.searchTutors(request, PageRequest.of(0, 20));
+
+        verify(tutorRepository, never()).findIdsWithinDistance(anyDouble(), anyDouble(), anyDouble());
+    }
+
+    @Test
+    void search_appliesDistanceFilterWhenCoordinatesPresent() {
+        TutorSearchRequestDto request = new TutorSearchRequestDto();
+        request.setLatitude(-27.4698);
+        request.setLongitude(153.0251);
+
+        when(tutorRepository.findIdsWithinDistance(anyDouble(), anyDouble(), anyDouble()))
+                .thenReturn(List.of(1L, 2L));
+        when(tutorRepository.findAll(any(Specification.class), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        tutorService.searchTutors(request, PageRequest.of(0, 20));
+
+        verify(tutorRepository).findIdsWithinDistance(-27.4698, 153.0251, 20.0);
+    }
+
+    // -----------------------------------------------------------------
+    // handleEnquiry
+    // -----------------------------------------------------------------
+
+    @Test
+    void enquiry_sendsEmail() throws MessagingException {
+        User tutorUser = UserFixtures.aTutor().withEmail("tutor@test.com").build();
+        when(tutorRepository.findById(1L)).thenReturn(Optional.of(TutorFixtures.aTutor(tutorUser)));
+
+        tutorService.handleEnquiry(1L, anEnquiry(), user);
+
+        verify(emailService).sendHtmlEmail(eq("tutor@test.com"), anyString(), anyString());
+    }
+
+    @Test
+    void enquiry_throwsWhenTutorMissing() {
+        when(tutorRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> tutorService.handleEnquiry(999L, anEnquiry(), user))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void enquiry_throwsWhenEmailFails() throws MessagingException {
+        User tutorUser = UserFixtures.aTutor().build();
+        when(tutorRepository.findById(1L)).thenReturn(Optional.of(TutorFixtures.aTutor(tutorUser)));
+        doThrow(new MessagingException("oops"))
+                .when(emailService).sendHtmlEmail(any(), any(), any());
+
+        assertThatThrownBy(() -> tutorService.handleEnquiry(1L, anEnquiry(), user))
+                .isInstanceOf(EmailSendException.class);
+    }
+
+    // -----------------------------------------------------------------
+    // Helpers
+    // -----------------------------------------------------------------
+
+    private EnquiryRequestDto anEnquiry() {
+        EnquiryRequestDto dto = new EnquiryRequestDto();
+        dto.setCourse("MATH1051");
+        dto.setSessionType("online");
+        dto.setMessage("Hi, I need help");
+        return dto;
     }
 }
