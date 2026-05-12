@@ -7,7 +7,12 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+/**
+ * Persisted refresh token. Storing tokens lets us explicitly revoke them
+ * (logout, password change, etc.) before their natural expiry.
+ */
 @Entity
+@Table(name = "refresh_tokens")
 @Getter
 @Setter
 public class RefreshToken {

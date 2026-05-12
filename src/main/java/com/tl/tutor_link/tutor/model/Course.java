@@ -25,7 +25,6 @@ public class Course {
     @Column(nullable = false)
     private String courseName;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private String faculty;
 }

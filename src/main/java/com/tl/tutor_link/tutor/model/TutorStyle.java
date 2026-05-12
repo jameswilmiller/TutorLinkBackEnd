@@ -4,6 +4,10 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * A teaching style label and description shown on a tutor's profile.
+ * Lifecycle-bound to the parent Tutor via cascade.
+ */
 @Entity
 @Table(name="tutor_styles")
 @Getter

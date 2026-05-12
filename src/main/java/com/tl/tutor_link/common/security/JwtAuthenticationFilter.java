@@ -1,6 +1,7 @@
 package com.tl.tutor_link.common.security;
 
 import com.tl.tutor_link.auth.service.JwtService;
+import com.tl.tutor_link.common.config.AppConstants;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,8 +19,15 @@ import lombok.NonNull;
 
 import java.io.IOException;
 
+/**
+ * Intercepts every request and, if a valid Bearer token is present, sets
+ * the authenticated user in the SecurityContext. Requests without a token
+ * pass through unauthenticated and are gated by SecurityConfiguration's
+ * authorization rules.
+ */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
     private final HandlerExceptionResolver handlerExceptionResolver;
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
@@ -40,35 +48,40 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
-        final String authorizationHeader = request.getHeader("Authorization");
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+         String authHeader = request.getHeader(AppConstants.AUTH_HEADER);
+
+
+        if (authHeader== null || !authHeader.startsWith(AppConstants.BEARER_PREFIX)) {
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
-            final String jwt = authorizationHeader.substring(7);
-            final String userEmail = jwtService.extractUsername(jwt);
-
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-            if (userEmail != null && authentication == null) {
-                UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
-
-                if(jwtService.isTokenValidAndOfType(jwt, userDetails, "access")) {
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.getAuthorities()
-                    );
-
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-                }
-            }
+            authenticateFromToken(request, authHeader.substring(AppConstants.BEARER_PREFIX.length()));
             filterChain.doFilter(request, response);
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             handlerExceptionResolver.resolveException(request, response, null, e);
         }
+    }
 
+    private void authenticateFromToken(HttpServletRequest request, String jwt) {
+        String userEmail = jwtService.extractUsername(jwt);
+        Authentication existing = SecurityContextHolder.getContext().getAuthentication();
+        if (userEmail == null || existing != null) {
+            return;
+        }
+
+        UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+
+        if (!jwtService.isTokenValidAndOfType(jwt, userDetails, AppConstants.TOKEN_TYPE_ACCESS)) {
+            return;
+        }
+
+        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                userDetails, null, userDetails.getAuthorities()
+        );
+        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(authToken);
     }
 }

@@ -15,14 +15,16 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import java.io.IOException;
 import java.util.Map;
 
+/**
+ * File upload endpoints. Currently only supports profile images.
+ */
 @RestController
 @RequestMapping("/upload")
 public class UploadController {
-    private final ImageUploadService imageUploadService;
+
     private final TutorService tutorService;
 
-    public UploadController(ImageUploadService imageUploadService, TutorService tutorService) {
-        this.imageUploadService = imageUploadService;
+    public UploadController(TutorService tutorService) {
         this.tutorService = tutorService;
     }
 
@@ -31,19 +33,6 @@ public class UploadController {
             @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal User user
     ) throws IOException {
-        String oldKey = tutorService.getMyTutorProfile(user).getProfileImageKey();
-
-        String newKey = imageUploadService.uploadProfileImage(file, user.getId());
-
-        if (oldKey != null && !oldKey.isBlank()) {
-            imageUploadService.deleteImage(oldKey);
-        }
-
-        tutorService.updateProfileImage(user, newKey);
-
-        return ResponseEntity.ok(Map.of(
-                "imageKey", newKey,
-                "imageUrl", imageUploadService.getPresignedUrl(newKey)
-        ));
+        return ResponseEntity.ok(tutorService.replaceProfileImage(user, file));
     }
 }

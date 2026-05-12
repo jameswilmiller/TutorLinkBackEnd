@@ -4,14 +4,19 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * A credential (degree, certification) held by a tutor. Lifecycle-bound
+ * to the parent Tutor via cascade.
+ */
 @Entity
 @Table(name="tutor_credentials")
 @Getter
 @Setter
 public class TutorCredential {
+
     @Id
     @GeneratedValue(strategy=GenerationType.AUTO)
-    private long id;
+    private Long id;
 
     @ManyToOne
     @JoinColumn(name="tutor_id", nullable = false)

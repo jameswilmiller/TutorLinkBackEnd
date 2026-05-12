@@ -12,9 +12,15 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Persistence layer for refresh tokens. Tokens are stored so they can be
+ * explicitly revoked (e.g. on logout or password change) without waiting
+ * for JWT expiry.
+ */
 @Service
 public class RefreshTokenService {
     private static final Logger log = LoggerFactory.getLogger(RefreshTokenService.class);
+
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtService jwtService;
 
@@ -22,19 +28,23 @@ public class RefreshTokenService {
         this.refreshTokenRepository = refreshTokenRepository;
         this.jwtService = jwtService;
     }
+
     @Transactional
     public RefreshToken createRefreshToken(User user){
         log.debug("Creating refresh token for user {}", user.getId());
+
         String token = jwtService.generateRefreshToken(user);
+        LocalDateTime expiresAt = LocalDateTime.now()
+                .plusSeconds(jwtService.getRefreshTokenExpiration() / 1000);
 
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setToken(token);
         refreshToken.setUser(user);
         refreshToken.setRevoked(false);
-        refreshToken.setExpiresAt(LocalDateTime.now().plusSeconds(jwtService.getRefreshTokenExpiration() / 1000)
-        );
+        refreshToken.setExpiresAt(expiresAt);
         return refreshTokenRepository.save(refreshToken);
     }
+
     @Transactional(readOnly = true)
     public RefreshToken validateStoredRefreshToken(String token) {
         RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
@@ -54,6 +64,7 @@ public class RefreshTokenService {
         }
         return refreshToken;
     }
+
     @Transactional
     public void revokeToken(String token) {
         refreshTokenRepository.findByToken(token).ifPresent(refreshToken -> {
@@ -64,13 +75,13 @@ public class RefreshTokenService {
     @Transactional
     public void revokeAllUserTokens(User user) {
         List<RefreshToken> tokens = refreshTokenRepository.findAllByUser_IdAndRevokedFalse(user.getId());
-        log.info("Revoking {} refresh tokens for user {}", tokens.size(), user.getId());
-        for (RefreshToken token : tokens) {
-            token.setRevoked(true);
+
+        if (tokens.isEmpty()) {
+            return;
         }
 
+        log.info("Revoking {} refresh tokens for user {}", tokens.size(), user.getId());
+        tokens.forEach(token -> token.setRevoked(true));
         refreshTokenRepository.saveAll(tokens);
     }
-
-
 }

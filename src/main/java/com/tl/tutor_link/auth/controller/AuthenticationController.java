@@ -16,12 +16,20 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
+/**
+ * Authentication endpoints: signup, login, refresh, logout, email
+ * verification. Issues short-lived JWT access tokens and long-lived
+ * refresh tokens via httpOnly cookies.
+ */
 @RequestMapping("/auth")
 @RestController
 public class AuthenticationController {
+
     private final JwtService jwtService;
     private final AuthenticationService authenticationService;
-    private RefreshTokenService refreshTokenService;
+    private final RefreshTokenService refreshTokenService;
     private final CookieService cookieService;
 
     public AuthenticationController(
@@ -39,30 +47,26 @@ public class AuthenticationController {
     @PostMapping("/signup")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterUserDto registerUserDto) {
         authenticationService.signup(registerUserDto);
-        return ResponseEntity.ok("User registered successfully. please verify your email");
+        return ResponseEntity.ok(Map.of("message", "User registered successfully. Please verify your email"));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponseDto> authenticate(@Valid @RequestBody LoginUserDto loginUserDto) {
-        User authenticatedUser = authenticationService.authenticate(loginUserDto);
+    public ResponseEntity<AuthResponseDto> authenticate(@Valid @RequestBody LoginUserDto dto) {
+        User user = authenticationService.authenticate(dto);
 
-        String accessToken = jwtService.generateAccessToken(authenticatedUser);
+        refreshTokenService.revokeAllUserTokens(user);
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
 
-        refreshTokenService.revokeAllUserTokens(authenticatedUser);
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(authenticatedUser);
-
+        String accessToken = jwtService.generateAccessToken(user);
         long refreshMaxAgeSeconds = jwtService.getRefreshTokenExpiration() / 1000;
 
+        String cookie = cookieService.
+                createRefreshTokenCookie(refreshToken.getToken(), refreshMaxAgeSeconds)
+                .toString();
+
         return ResponseEntity.ok()
-                .header(
-                        HttpHeaders.SET_COOKIE,
-                        cookieService.createRefreshTokenCookie(
-                                refreshToken.getToken(),
-                                refreshMaxAgeSeconds).toString()
-                ).body(new AuthResponseDto(
-                        accessToken,
-                        jwtService.getAccessTokenExpiration()
-                ));
+                .header(HttpHeaders.SET_COOKIE, cookie)
+                .body(new AuthResponseDto(accessToken, jwtService.getAccessTokenExpiration()));
     }
 
     @PostMapping("/refresh")
@@ -72,6 +76,7 @@ public class AuthenticationController {
         if (refreshTokenValue == null || refreshTokenValue.isBlank()) {
             return ResponseEntity.status(401).build();
         }
+
         RefreshToken storedToken = refreshTokenService.validateStoredRefreshToken(refreshTokenValue);
         User user = storedToken.getUser();
 
@@ -80,13 +85,7 @@ public class AuthenticationController {
         }
 
         String newAccessToken = jwtService.generateAccessToken(user);
-
-        return ResponseEntity.ok(
-                new AuthResponseDto(
-                        newAccessToken,
-                        jwtService.getAccessTokenExpiration()
-                )
-        );
+        return ResponseEntity.ok(new AuthResponseDto(newAccessToken, jwtService.getAccessTokenExpiration()));
     }
 
     @PostMapping("/logout")
@@ -96,32 +95,22 @@ public class AuthenticationController {
         if (refreshTokenValue != null && !refreshTokenValue.isBlank()) {
             refreshTokenService.revokeToken(refreshTokenValue);
         }
+
         return ResponseEntity.ok()
-                .header(
-                        HttpHeaders.SET_COOKIE,
-                        cookieService.clearRefreshTokenCookie().toString()
-                )
-                .body("Logged out successfully");
+                .header(HttpHeaders.SET_COOKIE, cookieService.clearRefreshTokenCookie().toString())
+                .body(Map.of("message", "Logged out successfully"));
     }
 
     @PostMapping("/verify")
-    public ResponseEntity<?> verifyUser(@Valid @RequestBody VerifyUserDto verifyUserDto) {
-        try {
-            authenticationService.verifyUser(verifyUserDto);
-            return ResponseEntity.ok("account verified successfully");
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<?> verifyUser(@Valid @RequestBody VerifyUserDto dto) {
+        authenticationService.verifyUser(dto);
+        return ResponseEntity.ok(Map.of("message", "Account verified successfully"));
     }
 
     @PostMapping("/resend")
     public ResponseEntity<?> resendVerificationCode(@RequestParam String email) {
-        try {
-            authenticationService.resendVerificationCode(email);
-            return ResponseEntity.ok("Verification code resent");
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        authenticationService.resendVerificationCode(email);
+        return ResponseEntity.ok(Map.of("message", "Verification code resent"));
     }
 }
 

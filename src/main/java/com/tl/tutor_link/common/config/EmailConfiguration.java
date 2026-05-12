@@ -8,8 +8,13 @@ import org.springframework.mail.javamail.JavaMailSenderImpl;
 
 import java.util.Properties;
 
+/**
+ * Gmail SMTP configuration. Credentials are pulled from environment
+ * variables via application.properties — never commit these directly.
+ */
 @Configuration
 public class EmailConfiguration {
+
     @Value("${spring.mail.username}")
     private String emailUsername;
     @Value("${spring.mail.password}")
@@ -18,21 +23,22 @@ public class EmailConfiguration {
     @Bean
     public JavaMailSender javaMailSender() {
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
-        mailSender.setHost("smtp.gmail.com");
-        mailSender.setPort(587);
+        mailSender.setHost(AppConstants.SMTP_HOST);
+        mailSender.setPort(AppConstants.SMTP_PORT);
         mailSender.setUsername(emailUsername);
         mailSender.setPassword(password);
+        mailSender.setJavaMailProperties(mailProperties());
+        return mailSender;
+    }
 
-        Properties props = mailSender.getJavaMailProperties();
+    private Properties mailProperties() {
+        Properties props = new Properties();
         props.put("mail.transport.protocol", "smtp");
         props.put("mail.smtp.auth", "true");
         props.put("mail.smtp.starttls.enable", "true");
-        props.put("mail.debug", "true");
-
-        props.put("mail.smtp.ssl.trust", "smtp.gmail.com");
+        props.put("mail.smtp.ssl.trust", AppConstants.SMTP_HOST);
         props.put("mail.smtp.ssl.protocols", "TLSv1.2");
-
-        return mailSender;
+        return props;
     }
 
 }

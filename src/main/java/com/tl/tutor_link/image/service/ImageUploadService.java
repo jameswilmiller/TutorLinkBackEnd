@@ -21,9 +21,16 @@ import java.time.Duration;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Profile image upload, retrieval, and deletion against a private S3 bucket.
+ * Uploads run through a three-layer validation chain (size/type/empty,
+ * Tika content-type detection, re-encode to clean JPEG) before being
+ * persisted. Reads use presigned URLs since the bucket is private.
+ */
 @Service
 public class ImageUploadService {
     private static final Logger log = LoggerFactory.getLogger(ImageUploadService.class);
+
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
     private final ImageValidator imageValidator;
@@ -31,14 +38,6 @@ public class ImageUploadService {
     @Value("${aws.s3.bucket-name}")
     private String bucketName;
 
-    @Value("${aws.region}")
-    private String region;
-
-    private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
-            "image/jpeg",
-            "image/png",
-            "image/webp"
-    );
     public ImageUploadService(S3Client s3Client, S3Presigner s3Presigner, ImageValidator imageValidator) {
         this.s3Client = s3Client;
         this.s3Presigner = s3Presigner;
@@ -50,35 +49,22 @@ public class ImageUploadService {
         log.info("User {} uploading profile image: {} bytes, type {}",
                 userId, file.getSize(), file.getContentType());
 
-        // layer 1: check the size, declared type and not empty
+
         validateFile(file);
-
-        // layer 2: verify content matches declares type using Tika
         imageValidator.verifyContentType(file);
-
-        // layer 3: decode + dimension check + re-encode as clean JPEG
         byte[] cleanBytes = imageValidator.reencodeAsJpeg(file);
 
+        String key = buildProfileImageKey(userId);
+        putObject(key, cleanBytes);
 
-
-        String key = AppConstants.S3_PROFILE_IMAGES_PREFIX + "user-" + userId + "/" + UUID.randomUUID() + ".jpg";
-
-        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                .bucket(bucketName)
-                .key(key)
-                .contentType(file.getContentType())
-                .build();
-
-        s3Client.putObject(
-                putObjectRequest,
-                RequestBody.fromBytes(file.getBytes())
-        );
-        log.info("Profile image uploaded: {}", key);
+        log.info("Profile image uploaded: {} ({} bytes after re-encoding)", key, cleanBytes.length);
         return key;
     }
 
     public String getPresignedUrl(String key) {
-        if (key == null || key.isBlank()) return null;
+        if (key == null || key.isBlank()) {
+            return null;
+        }
 
         GetObjectRequest getRequest = GetObjectRequest.builder()
                 .bucket(bucketName)
@@ -93,28 +79,6 @@ public class ImageUploadService {
         return s3Presigner.presignGetObject(presignRequest).url().toString();
     }
 
-    private void validateFile(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new FileUploadException("File is required");
-        }
-
-        if (!ALLOWED_CONTENT_TYPES.contains(file.getContentType())) {
-            throw new FileUploadException("File type is not allowed. Use JPEG, PNG or WebP");
-        }
-
-        if (file.getSize() > AppConstants.MAX_IMAGE_SIZE_BYTES) {
-            throw new FileUploadException("File is too large, must be less than 5MB");
-        }
-    }
-
-    private String getExtension(String fileName) {
-        if (fileName == null || !fileName.contains(".")) {
-            return "";
-        }
-
-        return fileName.substring(fileName.lastIndexOf("."));
-    }
-
     public void deleteImage(String key) {
         try {
             s3Client.deleteObject(DeleteObjectRequest.builder()
@@ -125,5 +89,32 @@ public class ImageUploadService {
         } catch (Exception e) {
             log.warn("Failed to delete S3 object: {}", key, e);
         }
+    }
+
+    private void validateFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new FileUploadException("File is required");
+        }
+        if (!AppConstants.ALLOWED_IMAGE_CONTENT_TYPES.contains(file.getContentType())) {
+            throw new FileUploadException("File type is not allowed. Use JPEG, PNG or WebP");
+        }
+        if (file.getSize() > AppConstants.MAX_IMAGE_SIZE_BYTES) {
+            throw new FileUploadException("File is too large, must be less than 5MB");
+        }
+    }
+
+    private String buildProfileImageKey(Long userId) {
+        return AppConstants.S3_PROFILE_IMAGES_PREFIX + "user-" + userId + "/"
+                + UUID.randomUUID() + AppConstants.JPEG_EXTENSION;
+    }
+
+    private void putObject(String key, byte[] bytes) {
+        PutObjectRequest request = PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .contentType(AppConstants.JPEG_CONTENT_TYPE)
+                .build();
+
+        s3Client.putObject(request, RequestBody.fromBytes(bytes));
     }
 }

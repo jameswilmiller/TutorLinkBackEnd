@@ -7,12 +7,18 @@ import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
-
+/**
+ * A tutor profile. Each tutor is backed by exactly one user, who acquires
+ * the TUTOR role when this profile is created. Owns child collections
+ * (languages, styles, credentials) via cascade, and joins to courses and
+ * faculties through separate tables.
+ */
 @Entity
 @Table(name = "tutors")
 @Getter
 @Setter
 public class Tutor {
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
@@ -21,15 +27,21 @@ public class Tutor {
     @JoinColumn(name= "user_id", nullable = false, unique = true)
     private User user;
 
-    @OneToMany(mappedBy ="tutor", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<TutorLanguage> languages = new ArrayList<>();
+    // profile content
+    private String bio;
+    private String tagline;
+    private String profileImageKey;
 
-    @OneToMany(mappedBy ="tutor", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<TutorStyle> styles = new ArrayList<>();
+    // Location
+    private String location;
+    private Double latitude;
+    private Double longitude;
+    private boolean remote;
 
-    @OneToMany(mappedBy ="tutor", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<TutorCredential> credentials = new ArrayList<>();
+    // Pricing
+    private Integer hourlyRate;
 
+    // Academic scope
     @ManyToMany
     @JoinTable(
             name = "tutor_courses",
@@ -47,14 +59,13 @@ public class Tutor {
     @Column(name = "faculty")
     private List<Faculty> faculties = new ArrayList<>();
 
-    @Column
-    private String bio;
-    private String tagline;
+    //profile detail (cascaded child entities)
+    @OneToMany(mappedBy ="tutor", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TutorLanguage> languages = new ArrayList<>();
 
-    private String location;
-    private boolean remote;
-    private Integer hourlyRate;
-    private String profileImageKey;
-    private Double latitude;
-    private Double longitude;
+    @OneToMany(mappedBy ="tutor", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TutorStyle> styles = new ArrayList<>();
+
+    @OneToMany(mappedBy ="tutor", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TutorCredential> credentials = new ArrayList<>();
 }

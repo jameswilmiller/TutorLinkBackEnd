@@ -21,14 +21,23 @@ import java.util.Random;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
-
+import java.security.SecureRandom;
+/**
+ * Signup, login, email verification. Generates 6-digit verification codes,
+ * sends them via email, and issues authenticated User objects on successful
+ * login.
+ */
 @Service
 public class AuthenticationService {
+
     private static final Logger log = LoggerFactory.getLogger(AuthenticationService.class);
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final EmailService emailService;
+    private final SecureRandom random = new SecureRandom();
+
     public AuthenticationService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
@@ -40,19 +49,30 @@ public class AuthenticationService {
         this.authenticationManager = authenticationManager;
         this.emailService = emailService;
     }
+
     @Transactional
     public User signup(RegisterUserDto input) {
         log.info("Signup attempt for email: {}", input.getEmail());
-        User user = new User(input.getFirstname(), input.getLastname(),input.getUsername(), input.getEmail(), passwordEncoder.encode(input.getPassword()));
-        user.setVerificationCode(generateVerificationCode());
-        user.setVerificationCodeExpiresAt(LocalDateTime.now().plus(AppConstants.VERIFICATION_CODE_TTL));
+
+        User user = new User(
+                input.getFirstname(),
+                input.getLastname(),
+                input.getUsername(),
+                input.getEmail(),
+                passwordEncoder.encode(input.getPassword())
+        );
+
         user.setEnabled(false);
         user.getRoles().add(Role.STUDENT);
+        assignNewVerificationCode(user);
+
         sendVerificationEmail(user);
+
         User saved = userRepository.save(user);
         log.info("User {} created successfully", saved.getId());
         return saved;
     }
+
     @Transactional(readOnly = true)
     public User authenticate(LoginUserDto input) {
         log.debug("Login attempt for email: {}", input.getEmail());
@@ -69,17 +89,17 @@ public class AuthenticationService {
         }
 
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        input.getEmail(),
-                        input.getPassword()
-                )
+                new UsernamePasswordAuthenticationToken(input.getEmail(), input.getPassword())
         );
+
         log.info("User {} logged in", user.getId());
         return user;
     }
+
     @Transactional
     public void verifyUser(VerifyUserDto input) {
         log.debug("Verification attempt for email: {}", input.getEmail());
+
         User user = userRepository.findByEmail(input.getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
@@ -97,12 +117,14 @@ public class AuthenticationService {
         user.setVerificationCode(null);
         user.setVerificationCodeExpiresAt(null);
         userRepository.save(user);
-        log.info("User {} verified successfully", user.getId());
 
+        log.info("User {} verified successfully", user.getId());
     }
+
     @Transactional
     public void resendVerificationCode(String email) {
         log.info("Resend verification request for email: {}", email);
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
@@ -111,17 +133,41 @@ public class AuthenticationService {
             throw new BadRequestException("Account is already verified");
         }
 
-        user.setVerificationCode(generateVerificationCode());
-        user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
+        assignNewVerificationCode(user);
         sendVerificationEmail(user);
         userRepository.save(user);
+
         log.info("Verification code resent to user {}", user.getId());
     }
 
-    public void sendVerificationEmail(User user) {
+    // ----------------------------------------------------------------------------------------------------------------
+    // Private helpers
+    // ----------------------------------------------------------------------------------------------------------------
+
+    private void assignNewVerificationCode(User user) {
+        user.setVerificationCode(generateVerificationCode());
+        user.setVerificationCodeExpiresAt(LocalDateTime.now().plus(AppConstants.VERIFICATION_CODE_TTL));
+    }
+
+    private String generateVerificationCode() {
+        int code = random.nextInt(AppConstants.VERIFICATION_CODE_RANGE) + AppConstants.VERIFICATION_CODE_MIN;
+        return String.valueOf(code);
+    }
+
+    private void sendVerificationEmail(User user) {
         String subject = "Account verification";
-        String verificationCode = user.getVerificationCode();
-        String htmlMessage = """
+        String htmlMessage = buildVerificationEmailBody(user);
+
+        try {
+            emailService.sendHtmlEmail(user.getEmail(), subject, htmlMessage);
+        } catch (MessagingException e) {
+            log.error("Failed to send verification email to {}", user.getEmail(), e);
+            throw new EmailSendException("Failed to send verification email");
+        }
+    }
+
+    private String buildVerificationEmailBody(User user) {
+        return """
             <!DOCTYPE html>
             <html lang="en">
             <head>
@@ -150,18 +196,7 @@ public class AuthenticationService {
                 </div>
             </body>
             </html>
-            """.formatted(user.getUsername(), verificationCode);
+            """.formatted(user.getDisplayUsername(), user.getVerificationCode());
+    }
 
-        try {
-            emailService.sendHtmlEmail(user.getEmail(), subject, htmlMessage);
-        } catch (MessagingException e) {
-            log.error("Failed to send verification email to {}", user.getEmail(), e);
-            throw new EmailSendException("Failed to send verification email");
-        }
-    }
-    private String generateVerificationCode() {
-        Random random = new Random();
-        int code = random.nextInt(900000) + 100000;
-        return String.valueOf(code);
-    }
 }

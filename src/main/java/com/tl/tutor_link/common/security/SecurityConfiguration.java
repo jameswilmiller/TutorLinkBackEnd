@@ -1,5 +1,6 @@
 package com.tl.tutor_link.common.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -14,10 +15,18 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-
+/**
+ * Spring Security setup. Configures CORS for the frontend dev server,
+ * disables CSRF (stateless JWT auth doesn't need it), defines per-endpoint
+ * authorization rules, and registers the JWT filter to run before the
+ * standard authentication filter.
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfiguration {
+    @Value("${app.cors.frontend-origin}")
+    private String frontendOrigin;
+
     private final AuthenticationProvider authenticationProvider;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
@@ -35,32 +44,41 @@ public class SecurityConfiguration {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
+                        // Public endpoints
                         .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/tutors/me/**").hasRole("TUTOR")
-                        .requestMatchers("/tutors", "/tutors/*").permitAll()
-                        .requestMatchers("/tutors/search").permitAll()
-                        .requestMatchers("/users/me").hasAnyRole("STUDENT", "TUTOR", "ADMIN")
-                        .requestMatchers("/users/me/become-tutor").hasAnyRole("STUDENT","TUTOR", "ADMIN")
-                        .requestMatchers("/users/**").hasRole("ADMIN")
-                        .requestMatchers("/upload/**").hasAnyRole("STUDENT","TUTOR","ADMIN")
                         .requestMatchers("/courses/**").permitAll()
+                        .requestMatchers("/tutors", "/tutors/*", "/tutors/search").permitAll()
+
+                        // Tutor-only endpoints (managing their own profile)
+                        .requestMatchers("/tutors/me/**").hasRole("TUTOR")
+
+                        // Authenticated user endpoints
+                        .requestMatchers("/users/me", "/users/me/become-tutor")
+                        .hasAnyRole("STUDENT", "TUTOR", "ADMIN")
+                        .requestMatchers("/upload/**")
+                        .hasAnyRole("STUDENT", "TUTOR", "ADMIN")
+
+                        // Admin-only
+                        .requestMatchers("/users/**").hasRole("ADMIN")
+
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        configuration.setAllowedOrigins(List.of(frontendOrigin));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-
         configuration.setAllowCredentials(true);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

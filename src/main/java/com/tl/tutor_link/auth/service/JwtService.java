@@ -1,5 +1,6 @@
 package com.tl.tutor_link.auth.service;
 
+import com.tl.tutor_link.common.config.AppConstants;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -14,8 +15,15 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.function.Function;
 
+/**
+ * Issues and validates JSON Web Tokens. Tokens are signed with HMAC-SHA
+ * using a base64-encoded secret. Each token carries a "tokenType" claim
+ * ("access" or "refresh") so the two can be distinguished and validated
+ * against the expected type.
+ */
 @Service
 public class JwtService {
+
     @Value("${security.jwt.secret-key}")
     private String secretKey;
     @Value("${security.jwt.expiration-time}")
@@ -29,31 +37,14 @@ public class JwtService {
     }
 
     public String generateAccessToken(Map<String, Object> extraClaims, UserDetails userDetails) {
-        extraClaims.put("tokenType", "access");
+        extraClaims.put(AppConstants.CLAIM_TOKEN_TYPE, AppConstants.TOKEN_TYPE_ACCESS);
         return buildToken(extraClaims, userDetails, accessTokenExpiration);
     }
 
     public String generateRefreshToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("tokenType", "refresh");
+        claims.put(AppConstants.CLAIM_TOKEN_TYPE, AppConstants.TOKEN_TYPE_REFRESH);
         return buildToken(claims, userDetails, refreshTokenExpiration);
-    }
-
-    public String buildToken(
-            Map<String, Object> extraClaims,
-            UserDetails userDetails,
-            long expiration
-    ) {
-        Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + expiration);
-
-        return Jwts.builder()
-                .claims(extraClaims)
-                .subject(userDetails.getUsername())
-                .issuedAt(now)
-                .expiration(expiryDate)
-                .signWith(getSignInKey())
-                .compact();
     }
 
     public String extractUsername(String token) {
@@ -61,15 +52,15 @@ public class JwtService {
     }
 
     public String extractTokenType(String token) {
-        return extractClaim(token, claims -> claims.get("tokenType", String.class));
+        return extractClaim(token, claims -> claims.get(AppConstants.CLAIM_TOKEN_TYPE, String.class));
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
+        String username = extractUsername(token);
         return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
     }
 
-    public boolean isTokenValidAndOfType (String token, UserDetails userDetails, String expectedType) {
+    public boolean isTokenValidAndOfType(String token, UserDetails userDetails, String expectedType) {
         return isTokenValid(token, userDetails) && expectedType.equals(extractTokenType(token));
     }
 
@@ -82,8 +73,26 @@ public class JwtService {
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = extractAllClaims(token);
+        Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
+    }
+
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Private helpers
+    // ----------------------------------------------------------------------------------------------------------------
+
+    private String buildToken(Map<String, Object> extraClaims, UserDetails userDetails, long expiration) {
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + expiration);
+
+        return Jwts.builder()
+                .claims(extraClaims)
+                .subject(userDetails.getUsername())
+                .issuedAt(now)
+                .expiration(expiry)
+                .signWith(getSignInKey())
+                .compact();
     }
 
     private boolean isTokenExpired(String token) {

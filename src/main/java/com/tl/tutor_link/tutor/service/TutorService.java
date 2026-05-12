@@ -4,6 +4,7 @@ import com.tl.tutor_link.auth.service.EmailService;
 import com.tl.tutor_link.common.exception.ConflictException;
 import com.tl.tutor_link.common.exception.EmailSendException;
 import com.tl.tutor_link.common.exception.ResourceNotFoundException;
+import com.tl.tutor_link.image.service.ImageUploadService;
 import com.tl.tutor_link.tutor.dto.EnquiryRequestDto;
 import com.tl.tutor_link.tutor.dto.TutorProfileRequestDto;
 import com.tl.tutor_link.tutor.dto.TutorProfileDto;
@@ -22,9 +23,12 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.tl.tutor_link.common.config.AppConstants;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.HtmlUtils;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Tutor profile lifecycle and discovery. Owns creating and updating tutor
@@ -40,16 +44,19 @@ public class TutorService {
     private final TutorMapper tutorMapper;
     private final CourseRepository courseRepository;
     private final EmailService emailService;
+    private final ImageUploadService imageUploadService;
 
     public TutorService(TutorRepository tutorRepository,
                         TutorMapper tutorMapper,
                         CourseRepository courseRepository,
-                        EmailService emailService
+                        EmailService emailService,
+                        ImageUploadService imageUploadService
     ) {
         this.tutorRepository = tutorRepository;
         this.tutorMapper = tutorMapper;
         this.courseRepository = courseRepository;
         this.emailService = emailService;
+        this.imageUploadService = imageUploadService;
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -87,12 +94,25 @@ public class TutorService {
     }
 
     @Transactional
-    public void updateProfileImage(User user, String key) {
-        log.info("Updating profile image for user {}: {}", user.getId(), key);
+
+    public Map<String, String> replaceProfileImage(User user, MultipartFile file) throws IOException {
+        log.info("User {} replacing profile image", user.getId());
 
         Tutor tutor = findByUserOrThrow(user);
-        tutor.setProfileImageKey(key);
+        String oldKey = tutor.getProfileImageKey();
+        String newKey = imageUploadService.uploadProfileImage(file, user.getId());
+
+        tutor.setProfileImageKey(newKey);
         tutorRepository.save(tutor);
+
+        if (oldKey != null && !oldKey.isBlank()) {
+            imageUploadService.deleteImage(oldKey);
+        }
+
+        return Map.of(
+                "imageKey", newKey,
+                "imageUrl", imageUploadService.getPresignedUrl(newKey)
+        );
     }
 
     // ----------------------------------------------------------------------------------------------------------------
