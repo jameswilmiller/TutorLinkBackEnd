@@ -7,6 +7,7 @@ import com.tl.tutor_link.common.exception.EmailSendException;
 import com.tl.tutor_link.common.exception.ResourceNotFoundException;
 import com.tl.tutor_link.common.exception.UnauthorizedException;
 import com.tl.tutor_link.common.exception.BadRequestException;
+import com.tl.tutor_link.notification.service.NotificationService;
 import com.tl.tutor_link.user.model.Role;
 import com.tl.tutor_link.user.model.User;
 import com.tl.tutor_link.user.repository.UserRepository;
@@ -37,17 +38,19 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final EmailService emailService;
     private final SecureRandom random = new SecureRandom();
+    private final NotificationService notificationService;
 
     public AuthenticationService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
             AuthenticationManager authenticationManager,
-            EmailService emailService
-    ) {
+            EmailService emailService,
+            NotificationService notificationService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.emailService = emailService;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -158,12 +161,12 @@ public class AuthenticationService {
         String subject = "Account verification";
         String htmlMessage = buildVerificationEmailBody(user);
 
-        try {
-            emailService.sendHtmlEmail(user.getEmail(), subject, htmlMessage);
-        } catch (MessagingException e) {
-            log.error("Failed to send verification email to {}", user.getEmail(), e);
-            throw new EmailSendException("Failed to send verification email");
-        }
+        notificationService.send(
+                user.getEmail(),
+                "Account Verification",
+                htmlMessage,
+                "verification email"
+        );
     }
 
     private String buildVerificationEmailBody(User user) {

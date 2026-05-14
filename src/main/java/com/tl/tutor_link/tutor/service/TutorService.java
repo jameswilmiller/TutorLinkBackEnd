@@ -5,6 +5,7 @@ import com.tl.tutor_link.common.exception.ConflictException;
 import com.tl.tutor_link.common.exception.EmailSendException;
 import com.tl.tutor_link.common.exception.ResourceNotFoundException;
 import com.tl.tutor_link.image.service.ImageUploadService;
+import com.tl.tutor_link.notification.service.NotificationService;
 import com.tl.tutor_link.tutor.dto.EnquiryRequestDto;
 import com.tl.tutor_link.tutor.dto.TutorProfileRequestDto;
 import com.tl.tutor_link.tutor.dto.TutorProfileDto;
@@ -45,18 +46,20 @@ public class TutorService {
     private final CourseRepository courseRepository;
     private final EmailService emailService;
     private final ImageUploadService imageUploadService;
+    private final NotificationService notificationService;
 
     public TutorService(TutorRepository tutorRepository,
                         TutorMapper tutorMapper,
                         CourseRepository courseRepository,
                         EmailService emailService,
-                        ImageUploadService imageUploadService
-    ) {
+                        ImageUploadService imageUploadService,
+                        NotificationService notificationService) {
         this.tutorRepository = tutorRepository;
         this.tutorMapper = tutorMapper;
         this.courseRepository = courseRepository;
         this.emailService = emailService;
         this.imageUploadService = imageUploadService;
+        this.notificationService = notificationService;
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -161,15 +164,13 @@ public class TutorService {
         String subject = "New TutorLink enquiry from " + fullName(student);
         String body = buildEnquiryEmailBody(dto, student);
 
-        try {
-            emailService.sendHtmlEmail(tutor.getUser().getEmail(), subject, body);
-            log.info("Enquiry email sent from user {} to tutor {}",
-                    student.getId(), id);
-        } catch (Exception e) {
-            log.error("Failed to send enquiry email from user {} to tutor {}",
-                    student.getId(), id, e);
-            throw new EmailSendException("Failed to send enquiry email");
-        }
+        notificationService.send(
+                tutor.getUser().getEmail(),
+                subject,
+                body,
+                "tutor enquiry email"
+        );
+
     }
 
     // ----------------------------------------------------------------------------------------------------------------
