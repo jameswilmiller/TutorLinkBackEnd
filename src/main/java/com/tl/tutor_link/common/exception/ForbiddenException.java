@@ -1,3 +1,5 @@
+package com.tl.tutor_link.common.exception;
+
 import com.tl.tutor_link.common.exception.ApiException;
 import org.springframework.http.HttpStatus;
 

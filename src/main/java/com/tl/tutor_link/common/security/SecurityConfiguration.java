@@ -57,6 +57,8 @@ public class SecurityConfiguration {
                         .hasAnyRole("STUDENT", "TUTOR", "ADMIN")
                         .requestMatchers("/upload/**")
                         .hasAnyRole("STUDENT", "TUTOR", "ADMIN")
+                        .requestMatchers("/bookings/**")
+                        .hasAnyRole("STUDENT", "TUTOR", "ADMIN")
 
                         // Admin-only
                         .requestMatchers("/users/**").hasRole("ADMIN")
