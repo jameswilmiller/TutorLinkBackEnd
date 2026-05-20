@@ -68,4 +68,13 @@ public class Tutor {
 
     @OneToMany(mappedBy ="tutor", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TutorCredential> credentials = new ArrayList<>();
+
+    @Column(nullable = false)
+    private int reviewCount = 0;
+
+    @Column(nullable = false)
+    private int ratingTotal = 0;
+
+    @Column
+    private Double averageRating;
 }

@@ -6,6 +6,7 @@ import com.tl.tutor_link.common.exception.EmailSendException;
 import com.tl.tutor_link.common.exception.ResourceNotFoundException;
 import com.tl.tutor_link.image.service.ImageUploadService;
 import com.tl.tutor_link.notification.service.NotificationService;
+import com.tl.tutor_link.review.service.ReviewService;
 import com.tl.tutor_link.tutor.dto.EnquiryRequestDto;
 import com.tl.tutor_link.tutor.dto.TutorProfileRequestDto;
 import com.tl.tutor_link.tutor.dto.TutorProfileDto;
@@ -44,20 +45,18 @@ public class TutorService {
     private final TutorRepository tutorRepository;
     private final TutorMapper tutorMapper;
     private final CourseRepository courseRepository;
-    private final EmailService emailService;
     private final ImageUploadService imageUploadService;
     private final NotificationService notificationService;
 
     public TutorService(TutorRepository tutorRepository,
                         TutorMapper tutorMapper,
                         CourseRepository courseRepository,
-                        EmailService emailService,
                         ImageUploadService imageUploadService,
-                        NotificationService notificationService) {
+                        NotificationService notificationService
+                        ) {
         this.tutorRepository = tutorRepository;
         this.tutorMapper = tutorMapper;
         this.courseRepository = courseRepository;
-        this.emailService = emailService;
         this.imageUploadService = imageUploadService;
         this.notificationService = notificationService;
     }

@@ -83,6 +83,16 @@ final class BookingEmails {
         return "<p><strong>Message:</strong></p><p>" + escape(booking.getMessage()) + "</p>";
     }
 
+    static String meetingLocationAddedBody(Booking booking) {
+        return "<h2>Meeting location added</h2>"
+                + "<p>" + escape(fullName(booking.getTutor().getUser()))
+                + " has set the location for your upcoming session.</p>"
+                + "<p><strong>Course:</strong> " + escape(booking.getCourse().getCourseCode()) + "</p>"
+                + "<p><strong>When:</strong> " + formatSchedule(booking) + "</p>"
+                + "<p><strong>Location:</strong> " + escape(booking.getMeetingLocation()) + "</p>"
+                + "<hr><p>Log in to TutorLink to view your bookings.</p>";
+    }
+
     private static String escape(String value) {
         return value == null ? "" : HtmlUtils.htmlEscape(value);
     }

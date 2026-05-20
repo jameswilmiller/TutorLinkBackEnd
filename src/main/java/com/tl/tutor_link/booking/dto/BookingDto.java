@@ -34,10 +34,13 @@ public class BookingDto {
 
     // Booking detail
     private LocalDateTime scheduledAt;
+    private String meetingLocation;
+    private boolean locationProposedByStudent;
     private String meetingLink;
     private Integer durationMinutes;
     private SessionType sessionType;
     private BookingStatus status;
     private String message;
     private LocalDateTime createdAt;
+    private Integer tutorHourlyRate;
 }

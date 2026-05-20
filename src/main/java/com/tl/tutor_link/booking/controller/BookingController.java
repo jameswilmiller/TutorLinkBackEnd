@@ -3,6 +3,7 @@ package com.tl.tutor_link.booking.controller;
 import com.tl.tutor_link.booking.dto.BookingDto;
 import com.tl.tutor_link.booking.dto.BookingRequestDto;
 import com.tl.tutor_link.booking.dto.UpdateMeetingLinkRequestDto;
+import com.tl.tutor_link.booking.dto.UpdateMeetingLocationRequestDto;
 import com.tl.tutor_link.booking.service.BookingService;
 import com.tl.tutor_link.user.model.User;
 import jakarta.validation.Valid;
@@ -98,6 +99,17 @@ public class BookingController {
     ) {
         return ResponseEntity.ok(
                 bookingService.updateMeetingLink(id, request.getMeetingLink(), tutorUser)
+        );
+    }
+
+    @PatchMapping("/{id}/meeting-location")
+    public ResponseEntity<BookingDto> updateMeetingLocation(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateMeetingLocationRequestDto request,
+            @AuthenticationPrincipal User tutorUser
+    ) {
+        return ResponseEntity.ok(
+                bookingService.updateMeetingLocation(id, request.getMeetingLocation(), tutorUser)
         );
     }
 }

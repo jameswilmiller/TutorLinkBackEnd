@@ -72,7 +72,8 @@ public class TutorMapper {
                     return dto2;
                 }).toList());
 
-
+        dto.setAverageRating(tutor.getAverageRating());
+        dto.setReviewCount(tutor.getReviewCount());
         return dto;
     }
 }

@@ -47,6 +47,9 @@ public class SecurityConfiguration {
                         // Public endpoints
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/courses/**").permitAll()
+
+                        .requestMatchers("/reviews/tutor/**").permitAll()
+                        .requestMatchers("/reviews/booking/**").permitAll()
                         .requestMatchers("/tutors", "/tutors/*", "/tutors/search").permitAll()
 
                         // Tutor-only endpoints (managing their own profile)
@@ -55,11 +58,15 @@ public class SecurityConfiguration {
                         // Authenticated user endpoints
                         .requestMatchers("/users/me", "/users/me/become-tutor")
                         .hasAnyRole("STUDENT", "TUTOR", "ADMIN")
+
                         .requestMatchers("/upload/**")
                         .hasAnyRole("STUDENT", "TUTOR", "ADMIN")
+
                         .requestMatchers("/bookings/**")
                         .hasAnyRole("STUDENT", "TUTOR", "ADMIN")
 
+                        .requestMatchers("/reviews/**")
+                        .hasAnyRole("STUDENT", "TUTOR", "ADMIN")
                         // Admin-only
                         .requestMatchers("/users/**").hasRole("ADMIN")
 
@@ -77,7 +84,7 @@ public class SecurityConfiguration {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(frontendOrigin));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);
 

@@ -38,11 +38,13 @@ public class BookingMapper {
         dto.setScheduledAt(booking.getScheduledAt());
         dto.setDurationMinutes(booking.getDurationMinutes());
         dto.setMeetingLink(booking.getMeetingLink());
+        dto.setMeetingLocation(booking.getMeetingLocation());
+        dto.setLocationProposedByStudent(booking.isLocationProposedByStudent());
         dto.setSessionType(booking.getSessionType());
         dto.setStatus(booking.getStatus());
         dto.setMessage(booking.getMessage());
         dto.setCreatedAt(booking.getCreatedAt());
-
+        dto.setTutorHourlyRate(tutor.getHourlyRate());
         return dto;
     }
 }

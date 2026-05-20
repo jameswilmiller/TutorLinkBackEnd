@@ -96,7 +96,10 @@ public class BookingService {
         booking.setSessionType(dto.getSessionType());
         booking.setMessage(dto.getMessage());
         booking.setStatus(BookingStatus.PENDING);
-
+        booking.setMeetingLocation(dto.getMeetingLocation());
+        booking.setLocationProposedByStudent(
+                dto.getMeetingLocation() != null && !dto.getMeetingLocation().isBlank()
+        );
         Booking saved = bookingRepository.save(booking);
         log.info("Booking {} created", saved.getId());
 
@@ -164,6 +167,22 @@ public class BookingService {
         log.info("Booking {} meeting link updated by tutor {}", bookingId, tutorUser.getId());
 
         notifyStudentOfMeetingLink(booking);
+        return bookingMapper.toDto(booking);
+    }
+
+    @Transactional
+    public BookingDto updateMeetingLocation(Long bookingId, String meetingLocation, User tutorUser) {
+        Booking booking = findBookingOrThrow(bookingId);
+        requireTutor(booking, tutorUser);
+        if (booking.getStatus() != BookingStatus.ACCEPTED) {
+            throw new BadRequestException("Meeting location can only be set on accepted bookings");
+        }
+
+        booking.setMeetingLocation(meetingLocation);
+        booking.setLocationProposedByStudent(false);
+        log.info("Booking {} meeting location updated by tutor {}", bookingId, tutorUser.getId());
+
+        notifyStudentOfMeetingLocation(booking);
         return bookingMapper.toDto(booking);
     }
     // -----------------------------------------------------------------
@@ -258,7 +277,17 @@ public class BookingService {
     // -----------------------------------------------------------------
     // Notifications
     // -----------------------------------------------------------------
-    private void notifyStudentOfMeetingLink(Booking booking) {
+    private void notifyStudentOfMeetingLocation(Booking booking) {
+        notificationService.send(
+                booking.getStudent().getEmail(),
+                "Meeting location added to your booking",
+                BookingEmails.meetingLocationAddedBody(booking),
+                "meeting location added notification"
+        );
+    }
+
+
+    private  void notifyStudentOfMeetingLink(Booking booking) {
         notificationService.send(
                 booking.getStudent().getEmail(),
                 "Meeting link added to your booking",

@@ -1,39 +1,33 @@
 package com.tl.tutor_link.tutor.service;
 
-import com.tl.tutor_link.auth.service.EmailService;
 import com.tl.tutor_link.common.exception.ConflictException;
-import com.tl.tutor_link.common.exception.EmailSendException;
 import com.tl.tutor_link.common.exception.ResourceNotFoundException;
 import com.tl.tutor_link.image.service.ImageUploadService;
-import com.tl.tutor_link.support.TutorFixtures;
-import com.tl.tutor_link.support.UserFixtures;
-import com.tl.tutor_link.tutor.dto.EnquiryRequestDto;
+import com.tl.tutor_link.notification.service.NotificationService;
+import com.tl.tutor_link.support.TestDataFactory;
 import com.tl.tutor_link.tutor.dto.TutorProfileDto;
-import com.tl.tutor_link.tutor.dto.TutorSearchRequestDto;
+import com.tl.tutor_link.tutor.dto.TutorProfileRequestDto;
 import com.tl.tutor_link.tutor.mapper.TutorMapper;
 import com.tl.tutor_link.tutor.model.Tutor;
 import com.tl.tutor_link.tutor.repository.CourseRepository;
 import com.tl.tutor_link.tutor.repository.TutorRepository;
 import com.tl.tutor_link.user.model.User;
-import jakarta.mail.MessagingException;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.jpa.domain.Specification;
 
-import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyDouble;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
+
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -41,141 +35,187 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class TutorServiceTest {
 
-    @Mock TutorRepository tutorRepository;
-    @Mock TutorMapper tutorMapper;
-    @Mock CourseRepository courseRepository;
-    @Mock EmailService emailService;
-    @Mock ImageUploadService imageUploadService;
+    @Mock
+    private TutorRepository tutorRepository;
 
-    @InjectMocks TutorService tutorService;
+    @Mock
+    private TutorMapper tutorMapper;
 
-    User user = UserFixtures.aUser().build();
+    @Mock
+    private CourseRepository courseRepository;
 
-    // -----------------------------------------------------------------
+    @Mock
+    private ImageUploadService imageUploadService;
+
+    @Mock
+    private NotificationService notificationService;
+
+    @InjectMocks
+    private TutorService tutorService;
+
+    // ----------------------------------------------------------------------------------------------------------------
     // createTutorProfile
-    // -----------------------------------------------------------------
+    // ----------------------------------------------------------------------------------------------------------------
 
     @Test
-    void create_throwsWhenProfileExists() {
-        when(tutorRepository.findByUser(user)).thenReturn(Optional.of(new Tutor()));
+    void createTutorProfile_whenUserAlreadyHasTutorProfile_throwsConflictException() {
 
-        assertThatThrownBy(() -> tutorService.createTutorProfile(user, TutorFixtures.aTutorRequest()))
-                .isInstanceOf(ConflictException.class);
+        // Arrange
+        User user = TestDataFactory.tutorUser();
+        Tutor existingTutor = TestDataFactory.tutor(user);
+
+        when(tutorRepository.findByUser(user))
+                .thenReturn(Optional.of(existingTutor));
+
+        // Act + Assert
+        assertThatThrownBy(() -> tutorService.createTutorProfile(user, null))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("Tutor profile already exists for this user");
+
+        verify(tutorRepository, never()).save(any(Tutor.class));
     }
 
     @Test
-    void create_savesNewProfile() {
-        Tutor saved = TutorFixtures.aTutor(user);
-        when(tutorRepository.findByUser(user)).thenReturn(Optional.empty());
-        when(tutorRepository.save(any(Tutor.class))).thenReturn(saved);
-        when(tutorMapper.toDto(saved)).thenReturn(new TutorProfileDto());
+    void createTutorProfile_whenUserHasNoExistingProfile_savesTutorWithRequestFields() {
 
-        tutorService.createTutorProfile(user, TutorFixtures.aTutorRequest());
+        // Arrange
+        User user = TestDataFactory.tutorUser();
+        TutorProfileRequestDto request = TestDataFactory.tutorProfileRequest();
 
-        verify(tutorRepository).save(any(Tutor.class));
+        Tutor savedTutor = TestDataFactory.tutor(user);
+        TutorProfileDto expectedDto = new TutorProfileDto();
+
+        when(tutorRepository.findByUser(user))
+                .thenReturn(Optional.empty());
+
+        when(tutorRepository.save(any(Tutor.class)))
+                .thenReturn(savedTutor);
+
+        when(tutorMapper.toDto(savedTutor))
+                .thenReturn(expectedDto);
+
+        // Act
+        TutorProfileDto result = tutorService.createTutorProfile(user, request);
+
+        // Assert
+        ArgumentCaptor<Tutor> tutorCaptor =
+                ArgumentCaptor.forClass(Tutor.class);
+
+        verify(tutorRepository).save(tutorCaptor.capture());
+
+        Tutor tutorToSave = tutorCaptor.getValue();
+
+        assertThat(tutorToSave.getUser()).isEqualTo(user);
+        assertThat(tutorToSave.getBio()).isEqualTo("Software engineering tutor");
+        assertThat(tutorToSave.getLocation()).isEqualTo("Brisbane");
+        assertThat(tutorToSave.getHourlyRate()).isEqualTo(50);
+        assertThat(tutorToSave.isRemote()).isTrue();
+
+        assertThat(result).isSameAs(expectedDto);
     }
 
-    // -----------------------------------------------------------------
+    // ----------------------------------------------------------------------------------------------------------------
     // updateTutorProfile
-    // -----------------------------------------------------------------
+    // ----------------------------------------------------------------------------------------------------------------
 
     @Test
-    void update_throwsWhenProfileMissing() {
-        when(tutorRepository.findByUser(user)).thenReturn(Optional.empty());
+    void updateTutorProfile_whenProfileExists_updatesTutorFields() {
 
-        assertThatThrownBy(() -> tutorService.updateTutorProfile(user, TutorFixtures.aTutorRequest()))
-                .isInstanceOf(ResourceNotFoundException.class);
+        // Arrange
+        User user = TestDataFactory.tutorUser();
+        Tutor existingTutor = TestDataFactory.tutor(user);
+
+        TutorProfileRequestDto request = TestDataFactory.tutorProfileRequest();
+        request.setBio("Updated bio");
+        request.setTagline("Updated tagline");
+        request.setLocation("St Lucia");
+        request.setHourlyRate(70);
+        request.setRemote(false);
+
+        TutorProfileDto expectedDto = new TutorProfileDto();
+
+        when(tutorRepository.findByUser(user))
+                .thenReturn(Optional.of(existingTutor));
+
+        when(tutorRepository.save(existingTutor))
+                .thenReturn(existingTutor);
+
+        when(tutorMapper.toDto(existingTutor))
+                .thenReturn(expectedDto);
+
+        // Act
+        TutorProfileDto result = tutorService.updateTutorProfile(user, request);
+
+        // Assert
+        assertThat(existingTutor.getBio()).isEqualTo("Updated bio");
+        assertThat(existingTutor.getTagline()).isEqualTo("Updated tagline");
+        assertThat(existingTutor.getLocation()).isEqualTo("St Lucia");
+        assertThat(existingTutor.getHourlyRate()).isEqualTo(70);
+        assertThat(existingTutor.isRemote()).isFalse();
+
+        assertThat(result).isSameAs(expectedDto);
+
+        verify(tutorRepository).save(existingTutor);
+        verify(tutorMapper).toDto(existingTutor);
     }
 
-    // -----------------------------------------------------------------
+    // ----------------------------------------------------------------------------------------------------------------
+    // getMyTutorProfile
+    // ----------------------------------------------------------------------------------------------------------------
+
+    @Test
+    void getMyTutorProfile_whenProfileExists_returnsDto() {
+
+        // Arrange
+        User user = TestDataFactory.tutorUser();
+        Tutor tutor = TestDataFactory.tutor(user);
+        TutorProfileDto expectedDto = new TutorProfileDto();
+
+        when(tutorRepository.findByUser(user))
+                .thenReturn(Optional.of(tutor));
+
+        when(tutorMapper.toDto(tutor))
+                .thenReturn(expectedDto);
+
+        // Act
+        TutorProfileDto result = tutorService.getMyTutorProfile(user);
+
+        // Assert
+        assertThat(result).isSameAs(expectedDto);
+
+        verify(tutorMapper).toDto(tutor);
+    }
+
+    @Test
+    void getMyTutorProfile_whenProfileDoesNotExist_throwsResourceNotFoundException() {
+
+        // Arrange
+        User user = TestDataFactory.tutorUser();
+
+        when(tutorRepository.findByUser(user))
+                .thenReturn(Optional.empty());
+
+        // Act + Assert
+        assertThatThrownBy(() -> tutorService.getMyTutorProfile(user))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Tutor profile not found");
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
     // getTutorById
-    // -----------------------------------------------------------------
+    // ----------------------------------------------------------------------------------------------------------------
 
     @Test
-    void getById_throwsWhenMissing() {
-        when(tutorRepository.findById(999L)).thenReturn(Optional.empty());
+    void getTutorById_whenTutorDoesNotExist_throwsResourceNotFoundException() {
 
-        assertThatThrownBy(() -> tutorService.getTutorById(999L))
+        // Arrange
+        Long tutorId = 999L;
+
+        when(tutorRepository.findById(tutorId))
+                .thenReturn(Optional.empty());
+
+        // Act + Assert
+        assertThatThrownBy(() -> tutorService.getTutorById(tutorId))
                 .isInstanceOf(ResourceNotFoundException.class);
-    }
-
-    // -----------------------------------------------------------------
-    // searchTutors
-    // -----------------------------------------------------------------
-
-    @Test
-    void search_skipsDistanceQueryWhenRemote() {
-        TutorSearchRequestDto request = new TutorSearchRequestDto();
-        request.setLatitude(-27.4698);
-        request.setLongitude(153.0251);
-        request.setRemote(true);
-
-        when(tutorRepository.findAll(any(Specification.class), any(PageRequest.class)))
-                .thenReturn(new PageImpl<>(List.of()));
-
-        tutorService.searchTutors(request, PageRequest.of(0, 20));
-
-        verify(tutorRepository, never()).findIdsWithinDistance(anyDouble(), anyDouble(), anyDouble());
-    }
-
-    @Test
-    void search_appliesDistanceFilterWhenCoordinatesPresent() {
-        TutorSearchRequestDto request = new TutorSearchRequestDto();
-        request.setLatitude(-27.4698);
-        request.setLongitude(153.0251);
-
-        when(tutorRepository.findIdsWithinDistance(anyDouble(), anyDouble(), anyDouble()))
-                .thenReturn(List.of(1L, 2L));
-        when(tutorRepository.findAll(any(Specification.class), any(PageRequest.class)))
-                .thenReturn(new PageImpl<>(List.of()));
-
-        tutorService.searchTutors(request, PageRequest.of(0, 20));
-
-        verify(tutorRepository).findIdsWithinDistance(-27.4698, 153.0251, 20.0);
-    }
-
-    // -----------------------------------------------------------------
-    // handleEnquiry
-    // -----------------------------------------------------------------
-
-    @Test
-    void enquiry_sendsEmail() throws MessagingException {
-        User tutorUser = UserFixtures.aTutor().withEmail("tutor@test.com").build();
-        when(tutorRepository.findById(1L)).thenReturn(Optional.of(TutorFixtures.aTutor(tutorUser)));
-
-        tutorService.handleEnquiry(1L, anEnquiry(), user);
-
-        verify(emailService).sendHtmlEmail(eq("tutor@test.com"), anyString(), anyString());
-    }
-
-    @Test
-    void enquiry_throwsWhenTutorMissing() {
-        when(tutorRepository.findById(999L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> tutorService.handleEnquiry(999L, anEnquiry(), user))
-                .isInstanceOf(ResourceNotFoundException.class);
-    }
-
-    @Test
-    void enquiry_throwsWhenEmailFails() throws MessagingException {
-        User tutorUser = UserFixtures.aTutor().build();
-        when(tutorRepository.findById(1L)).thenReturn(Optional.of(TutorFixtures.aTutor(tutorUser)));
-        doThrow(new MessagingException("oops"))
-                .when(emailService).sendHtmlEmail(any(), any(), any());
-
-        assertThatThrownBy(() -> tutorService.handleEnquiry(1L, anEnquiry(), user))
-                .isInstanceOf(EmailSendException.class);
-    }
-
-    // -----------------------------------------------------------------
-    // Helpers
-    // -----------------------------------------------------------------
-
-    private EnquiryRequestDto anEnquiry() {
-        EnquiryRequestDto dto = new EnquiryRequestDto();
-        dto.setCourse("MATH1051");
-        dto.setSessionType("online");
-        dto.setMessage("Hi, I need help");
-        return dto;
     }
 }

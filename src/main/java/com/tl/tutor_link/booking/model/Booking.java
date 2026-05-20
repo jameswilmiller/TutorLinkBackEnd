@@ -44,6 +44,12 @@ public class Booking {
     @Column(length = 500)
     private String meetingLink;
 
+    @Column(length = 500)
+    private String meetingLocation;
+
+    @Column(nullable = false)
+    private boolean locationProposedByStudent = false;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private SessionType sessionType;

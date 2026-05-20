@@ -99,7 +99,9 @@ public class TutorController {
         return switch (sort) {
             case "price_low" -> Sort.by(Sort.Direction.ASC, "hourlyRate");
             case "price_high" -> Sort.by(Sort.Direction.DESC, "hourlyRate");
-            default -> Sort.by(Sort.Direction.DESC, "id");
+            case "newest" -> Sort.by(Sort.Direction.DESC, "id");
+            
+            default -> Sort.by(Sort.Order.desc("averageRating").nullsLast());
         };
     }
 }

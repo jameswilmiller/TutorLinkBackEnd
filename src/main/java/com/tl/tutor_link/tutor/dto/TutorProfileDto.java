@@ -45,4 +45,6 @@ public class TutorProfileDto {
     private List<TutorLanguageDto> languages;
     private List<TutorCredentialDto> credentials;
     private List<TutorStyleDto> styles;
+    private Double averageRating;
+    private long reviewCount;
 }

@@ -28,6 +28,9 @@ public class BookingRequestDto {
     @Future(message = "Scheduled time must be in the future")
     private LocalDateTime scheduledAt;
 
+    @Size(max = 500, message = "Meeting location must be at most 500 characters")
+    private String meetingLocation;
+
     @NotNull(message = "Duration is required")
     @Min(value = 30, message = "Duration must be at least 30 minutes")
     @Max(value = 240, message = "Duration must be at most 240 minutes")

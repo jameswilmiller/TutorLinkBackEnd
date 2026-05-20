@@ -7,6 +7,7 @@ import com.tl.tutor_link.user.model.Role;
 import com.tl.tutor_link.user.model.User;
 import com.tl.tutor_link.user.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Set;
 
 @Component
+@Profile("dev")
 @Order(2)
 public class DataSeeder implements CommandLineRunner {
 
