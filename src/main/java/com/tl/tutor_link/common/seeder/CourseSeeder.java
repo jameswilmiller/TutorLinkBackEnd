@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tl.tutor_link.tutor.model.Course;
 import com.tl.tutor_link.tutor.repository.CourseRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
+@Profile("!test")
 @Order(1)
 public class CourseSeeder implements CommandLineRunner {
 
