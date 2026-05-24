@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: tutorlink-postgres
+    environment:
+      POSTGRES_DB: tutorlink
+      POSTGRES_USER: tutorlink
+      POSTGRES_PASSWORD: tutorlink
+    ports:
+      - "5432:5432"
+    volumes:
+      - tutorlink-pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tutorlink -d tutorlink"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: .
+    container_name: tutorlink-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/tutorlink
+      SPRING_DATASOURCE_USERNAME: tutorlink
+      SPRING_DATASOURCE_PASSWORD: tutorlink
+      SPRING_JPA_DDL_AUTO: update
+      JWT_SECRET_KEY: local-dev-secret-replace-in-prod-with-something-long-and-random
+      SUPPORT_EMAIL: ${SUPPORT_EMAIL:-noreply@example.com}
+      SUPPORT_PASSWORD: ${SUPPORT_PASSWORD:-dummy}
+      REGION: ${AWS_REGION:-ap-southeast-2}
+      BUCKET_NAME: ${BUCKET_NAME:-tutorlink-dev}
+      ACCESS_KEY_ID: ${ACCESS_KEY_ID:-dummy}
+      ACCESS_KEY_SECRET: ${ACCESS_KEY_SECRET:-dummy}
+      ALLOWED_ORIGINS: http://localhost:5173
+      SPRING_PROFILES_ACTIVE: dev
+      REFRESH_COOKIE_SECURE: "false"
+    ports:
+      - "8080:8080"
+
+volumes:
+  tutorlink-pgdata:

@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -23,9 +24,11 @@ import java.util.List;
  */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfiguration {
-    @Value("${app.cors.frontend-origin}")
-    private String frontendOrigin;
+    @Value("${app.cors.allowed-origins}")
+    private String allowedOrigins;
+
 
     private final AuthenticationProvider authenticationProvider;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -51,6 +54,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/reviews/tutor/**").permitAll()
                         .requestMatchers("/reviews/booking/**").permitAll()
                         .requestMatchers("/tutors", "/tutors/*", "/tutors/search").permitAll()
+                        .requestMatchers("/health").permitAll()
 
                         // Tutor-only endpoints (managing their own profile)
                         .requestMatchers("/tutors/me/**").hasRole("TUTOR")
@@ -83,7 +87,7 @@ public class SecurityConfiguration {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(frontendOrigin));
+        configuration.setAllowedOrigins(List.of(allowedOrigins.split(",")));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);
