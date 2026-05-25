@@ -55,6 +55,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/reviews/booking/**").permitAll()
                         .requestMatchers("/tutors", "/tutors/*", "/tutors/search").permitAll()
                         .requestMatchers("/health").permitAll()
+                        .requestMatchers("/sentry-test").permitAll()
 
                         // Tutor-only endpoints (managing their own profile)
                         .requestMatchers("/tutors/me/**").hasRole("TUTOR")
