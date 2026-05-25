@@ -50,7 +50,7 @@ dependencies {
     implementation "software.amazon.awssdk:s3:2.31.67"
 	implementation 'com.bucket4j:bucket4j-core:8.10.1'
 	implementation 'org.apache.tika:tika-core:2.9.2'
-	implementation 'io.sentry:sentry-spring-boot-starter-jakarta:8.0.0'
+	implementation 'io.sentry:sentry-spring-boot-4:8.28.0'
 }
 
 tasks.named('test') {

@@ -26,6 +26,14 @@ jobs:
       - name: Run tests
         run: ./gradlew clean test
 
+      - name: Upload test report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: build/reports/tests/test/
+          retention-days: 7
+
   build-and-push:
     needs: test
     runs-on: ubuntu-latest
