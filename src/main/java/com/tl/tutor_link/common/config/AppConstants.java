@@ -24,7 +24,7 @@ public class AppConstants {
 
     // Verification
     public static final Duration VERIFICATION_CODE_TTL = Duration.ofMinutes(15);
-    public static final int VERIFICATION_CODE_MIN = 10000;
+    public static final int VERIFICATION_CODE_MIN = 100000;
     public static final int VERIFICATION_CODE_RANGE = 900000;
 
     // S3 presigned URLs
