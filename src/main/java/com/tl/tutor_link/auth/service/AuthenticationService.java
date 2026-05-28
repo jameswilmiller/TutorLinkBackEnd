@@ -3,10 +3,7 @@ package com.tl.tutor_link.auth.service;
 import com.tl.tutor_link.auth.dto.LoginUserDto;
 import com.tl.tutor_link.auth.dto.RegisterUserDto;
 import com.tl.tutor_link.auth.dto.VerifyUserDto;
-import com.tl.tutor_link.common.exception.EmailSendException;
-import com.tl.tutor_link.common.exception.ResourceNotFoundException;
-import com.tl.tutor_link.common.exception.UnauthorizedException;
-import com.tl.tutor_link.common.exception.BadRequestException;
+import com.tl.tutor_link.common.exception.*;
 import com.tl.tutor_link.notification.service.NotificationService;
 import com.tl.tutor_link.user.model.Role;
 import com.tl.tutor_link.user.model.User;
@@ -83,17 +80,28 @@ public class AuthenticationService {
         User user = userRepository.findByEmail(input.getEmail())
                 .orElseThrow(() -> {
                     log.warn("Login failed - no account for email: {}", input.getEmail());
-                    return new UnauthorizedException("Invalid email or password");
+                    return new UnauthorizedException(
+                            "Invalid email or password",
+                            ErrorCode.INVALID_CREDENTIALS);
                 });
 
         if (!user.isEnabled()) {
             log.warn("Login attempt on unverified account: {}", input.getEmail());
-            throw new UnauthorizedException("Account is not verified. Please verify your email");
+            throw new UnauthorizedException(
+                    "Account is not verified. Please verify your email",
+                    ErrorCode.ACCOUNT_NOT_VERIFIED);
         }
 
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(input.getEmail(), input.getPassword())
-        );
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(input.getEmail(), input.getPassword())
+            );
+        } catch (org.springframework.security.core.AuthenticationException ex) {
+            throw new UnauthorizedException(
+                    "Invalid email or password",
+                    ErrorCode.INVALID_CREDENTIALS
+            );
+        }
 
         log.info("User {} logged in", user.getId());
         return user;
