@@ -16,7 +16,9 @@ public class ErrorResponse {
     private String error;
     private String message;
     private String path;
+    private String code;
     private List<FieldError> fieldErrors;
+
 
     public ErrorResponse(int status, String error, String message, String path) {
         this.timestamp = Instant.now();
@@ -25,6 +27,16 @@ public class ErrorResponse {
         this.message = message;
         this.path = path;
     }
+
+    public ErrorResponse(int status, String error, String message, String path, String code) {
+        this.timestamp = Instant.now();
+        this.status = status;
+        this.error = error;
+        this.message = message;
+        this.path = path;
+        this.code = code;
+    }
+
 
     @Getter
     @Setter
