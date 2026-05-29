@@ -18,12 +18,13 @@ public class BookingDto {
     private Long id;
 
     // Tutor identity
-    private Long tutorId;
+    private Long tutorUserId;
+    private Long tutorProfileId;
     private String tutorName;
     private String tutorEmail;
 
     // Student identity
-    private Long studentId;
+    private Long studentUserId;
     private String studentName;
     private String studentEmail;
 

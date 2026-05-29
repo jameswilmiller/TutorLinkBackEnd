@@ -22,12 +22,13 @@ public class BookingMapper {
 
         Tutor tutor = booking.getTutor();
         User tutorUser = tutor.getUser();
-        dto.setTutorId(tutor.getId());
+        dto.setTutorUserId(tutorUser.getId());
+        dto.setTutorProfileId(tutor.getId());
         dto.setTutorName(tutorUser.getFirstname() + " " + tutorUser.getLastname());
         dto.setTutorEmail(tutorUser.getEmail());
 
         User student = booking.getStudent();
-        dto.setStudentId(student.getId());
+        dto.setStudentUserId(student.getId());
         dto.setStudentName(student.getFirstname() + " " + student.getLastname());
         dto.setStudentEmail(student.getEmail());
 
