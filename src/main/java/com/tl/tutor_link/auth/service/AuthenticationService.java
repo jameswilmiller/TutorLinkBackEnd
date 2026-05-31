@@ -53,6 +53,11 @@ public class AuthenticationService {
     @Transactional
     public User signup(RegisterUserDto input) {
         log.info("Signup attempt for email: {}", input.getEmail());
+        String email =  input.getEmail().trim().toLowerCase();
+        if (userRepository.existsByEmailIgnoreCase(email)) {
+            log.info("signup attempt for already-registered email");
+            return null;
+        }
 
         User user = new User(
                 input.getFirstname(),
@@ -65,7 +70,6 @@ public class AuthenticationService {
         user.setEnabled(false);
         user.getRoles().add(Role.STUDENT);
         assignNewVerificationCode(user);
-
         sendVerificationEmail(user);
 
         User saved = userRepository.save(user);
