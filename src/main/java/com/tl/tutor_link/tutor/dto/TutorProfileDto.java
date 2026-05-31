@@ -21,7 +21,7 @@ public class TutorProfileDto {
     private String username;
     private String firstname;
     private String lastname;
-
+    private String slug;
     // Profile content
     private String bio;
     private String tagline;

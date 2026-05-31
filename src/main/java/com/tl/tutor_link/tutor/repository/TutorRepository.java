@@ -16,7 +16,8 @@ import java.util.Optional;
 public interface TutorRepository extends JpaRepository<Tutor, Long>, JpaSpecificationExecutor<Tutor> {
 
     Optional<Tutor> findByUser(User user);
-
+    boolean existsBySlug(String slug);
+    Optional<Tutor> findBySlug(String slug);
     /**
      * Returns IDs of tutors within the given radius of the provided coordinates.
      * Uses the Haversine formula directly in SQL.

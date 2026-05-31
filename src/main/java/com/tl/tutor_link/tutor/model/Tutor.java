@@ -23,6 +23,9 @@ public class Tutor {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
+    @Column(unique = true)
+    private String slug;
+
     @OneToOne
     @JoinColumn(name= "user_id", nullable = false, unique = true)
     private User user;

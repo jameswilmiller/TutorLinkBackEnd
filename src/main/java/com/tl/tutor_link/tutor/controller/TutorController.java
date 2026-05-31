@@ -77,9 +77,9 @@ public class TutorController {
         return ResponseEntity.ok(tutorService.getMyTutorProfile(user));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<TutorProfileDto> getTutorById(@PathVariable Long id) {
-        return ResponseEntity.ok(tutorService.getTutorById(id));
+    @GetMapping("/{slug}")
+    public ResponseEntity<TutorProfileDto> getTutorBySlug(@PathVariable String slug) {
+        return ResponseEntity.ok(tutorService.getTutorBySlug(slug));
     }
 
     @PostMapping("/{id}/enquire")
