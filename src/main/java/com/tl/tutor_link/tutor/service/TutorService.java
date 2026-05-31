@@ -31,6 +31,7 @@ import org.springframework.web.util.HtmlUtils;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Tutor profile lifecycle and discovery. Owns creating and updating tutor
@@ -76,6 +77,7 @@ public class TutorService {
 
         Tutor tutor = new Tutor();
         tutor.setUser(user);
+        tutor.setSlug(generateUniqueSlug(user));
         applyProfileUpdates(tutor, dto);
 
         Tutor savedTutor = tutorRepository.save(tutor);
@@ -117,6 +119,7 @@ public class TutorService {
         );
     }
 
+
     // ----------------------------------------------------------------------------------------------------------------
     // Profile reads
     // ----------------------------------------------------------------------------------------------------------------
@@ -150,6 +153,13 @@ public class TutorService {
        return tutors.map(tutorMapper::toDto);
     }
 
+    @Transactional(readOnly = true)
+    public TutorProfileDto getTutorBySlug(String slug) {
+        log.debug("Fetching tutor by slug: {}", slug);
+        Tutor tutor = tutorRepository.findBySlug(slug)
+                .orElseThrow(() -> new ResourceNotFoundException("Tutor not found"));
+        return tutorMapper.toDto(tutor);
+    }
     // ----------------------------------------------------------------------------------------------------------------
     // Enquiries -
     // ----------------------------------------------------------------------------------------------------------------
@@ -306,6 +316,25 @@ public class TutorService {
                 + "<hr>"
                 + "<p>Reply directly to " + studentEmail + " to arrange the session.</p>";
     }
+    private String generateUniqueSlug(User user) {
+        String base = (user.getFirstname() + "-" + user.getLastname())
+                .toLowerCase()
+                .replaceAll("[^a-z0-9]+", "-")   // non-alphanumerics → hyphen
+                .replaceAll("(^-|-$)", "");       // trim leading/trailing hyphens
+
+        if (base.isBlank()) base = "tutor";
+
+        final Set<String> RESERVED = Set.of("me", "search", "browse");
+
+        String candidate = base;
+        int suffix = 2;
+        while (RESERVED.contains(candidate) || tutorRepository.existsBySlug(candidate)) {
+            candidate = base + "-" + suffix;
+            suffix++;
+        }
+        return candidate;
+    }
+
 
     private String fullName(User user) {
         return user.getFirstname() + " " + user.getLastname();

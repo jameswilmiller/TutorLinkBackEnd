@@ -31,7 +31,7 @@ public class TutorMapper {
         dto.setUsername(tutor.getUser().getDisplayUsername());
         dto.setFirstname(tutor.getUser().getFirstname());
         dto.setLastname(tutor.getUser().getLastname());
-
+        dto.setSlug(tutor.getSlug());
         dto.setBio(tutor.getBio());
         dto.setTagline(tutor.getTagline());
 
