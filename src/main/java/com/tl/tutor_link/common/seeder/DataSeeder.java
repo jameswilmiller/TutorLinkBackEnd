@@ -249,6 +249,7 @@ public class DataSeeder implements CommandLineRunner {
 
         Tutor tutor = new Tutor();
         tutor.setUser(savedUser);
+        tutor.setSlug(generateSlug(firstname, lastname));   // <-- added
         tutor.setLocation(location);
         tutor.setLatitude(latitude);
         tutor.setLongitude(longitude);
@@ -282,5 +283,20 @@ public class DataSeeder implements CommandLineRunner {
         });
 
         tutorRepository.save(tutor);
+    }
+
+    private String generateSlug(String firstname, String lastname) {
+        String base = (firstname + "-" + lastname)
+                .toLowerCase()
+                .replaceAll("[^a-z0-9]+", "-")   // non-alphanumerics → hyphen
+                .replaceAll("(^-|-$)", "");       // trim leading/trailing hyphens
+
+        String candidate = base;
+        int suffix = 2;
+        while (tutorRepository.existsBySlug(candidate)) {
+            candidate = base + "-" + suffix;
+            suffix++;
+        }
+        return candidate;
     }
 }

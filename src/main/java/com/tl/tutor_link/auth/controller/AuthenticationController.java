@@ -1,9 +1,6 @@
 package com.tl.tutor_link.auth.controller;
 
-import com.tl.tutor_link.auth.dto.AuthResponseDto;
-import com.tl.tutor_link.auth.dto.LoginUserDto;
-import com.tl.tutor_link.auth.dto.RegisterUserDto;
-import com.tl.tutor_link.auth.dto.VerifyUserDto;
+import com.tl.tutor_link.auth.dto.*;
 import com.tl.tutor_link.auth.model.RefreshToken;
 import com.tl.tutor_link.user.model.User;
 import com.tl.tutor_link.auth.service.AuthenticationService;
@@ -111,6 +108,19 @@ public class AuthenticationController {
     public ResponseEntity<?> resendVerificationCode(@RequestParam String email) {
         authenticationService.resendVerificationCode(email);
         return ResponseEntity.ok(Map.of("message", "Verification code resent"));
+    }
+
+    @PostMapping("/reset-code")
+    public ResponseEntity<?> sendPasswordResetcode(@RequestParam String email) {
+        authenticationService.sendPasswordResetCode(email);
+        return ResponseEntity.ok(Map.of("message",  "Password reset code sent"));
+    }
+
+
+    @PostMapping("/reset")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordDto dto) {
+        authenticationService.resetPassword(dto);
+        return ResponseEntity.ok(Map.of("message", "Password reset succesfully"));
     }
 }
 
