@@ -52,6 +52,10 @@ public class User implements UserDetails {
     @Column(name = "verification_expiration")
     private LocalDateTime verificationCodeExpiresAt;
 
+    @Column(name = "password_code")
+    private String passwordCode;
+    @Column(name = "password_expiration")
+    private LocalDateTime passwordCodeExpiresAt;
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
             name = "user_roles",
@@ -106,7 +110,4 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return enabled;
     }
-
-
-
 }

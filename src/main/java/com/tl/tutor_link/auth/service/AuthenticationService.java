@@ -2,20 +2,20 @@ package com.tl.tutor_link.auth.service;
 
 import com.tl.tutor_link.auth.dto.LoginUserDto;
 import com.tl.tutor_link.auth.dto.RegisterUserDto;
+import com.tl.tutor_link.auth.dto.ResetPasswordDto;
 import com.tl.tutor_link.auth.dto.VerifyUserDto;
 import com.tl.tutor_link.common.exception.*;
 import com.tl.tutor_link.notification.service.NotificationService;
 import com.tl.tutor_link.user.model.Role;
 import com.tl.tutor_link.user.model.User;
 import com.tl.tutor_link.user.repository.UserRepository;
-import jakarta.mail.MessagingException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.tl.tutor_link.common.config.AppConstants;
 import java.time.LocalDateTime;
-import java.util.Random;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,7 +33,6 @@ public class AuthenticationService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
-    private final EmailService emailService;
     private final SecureRandom random = new SecureRandom();
     private final NotificationService notificationService;
 
@@ -41,12 +40,10 @@ public class AuthenticationService {
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
             AuthenticationManager authenticationManager,
-            EmailService emailService,
             NotificationService notificationService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
-        this.emailService = emailService;
         this.notificationService = notificationService;
     }
 
@@ -155,22 +152,78 @@ public class AuthenticationService {
         log.info("Verification code resent to user {}", user.getId());
     }
 
+    @Transactional
+    public void resetPassword(ResetPasswordDto input) {
+        log.debug("Password reset attempt for email: {}", input.getEmail());
+
+        User user = userRepository.findByEmail(input.getEmail())
+                .orElseThrow(() -> new BadRequestException("Invalid or expired reset code"));
+
+        if (user.getPasswordCodeExpiresAt() == null || user.getPasswordCodeExpiresAt().isBefore(LocalDateTime.now())) {
+            log.warn("Expired or missing password reset code for user {}", user.getId());
+            throw new BadRequestException("Invalid or expired reset code");
+        }
+
+        if (user.getPasswordCode() == null || !user.getPasswordCode().equals(input.getPasswordCode())) {
+            log.warn("Invalid password reset code for user {}", user.getId());
+            throw new BadRequestException("Invalid or expired reset code");
+        }
+
+        user.setPassword(passwordEncoder.encode(input.getNewPassword()));
+        user.setPasswordCode(null);
+        user.setPasswordCodeExpiresAt(null);
+        userRepository.save(user);
+
+        log.info("Password reset successful for user {}", user.getId());
+    }
+
+    @Transactional
+    public void sendPasswordResetCode(String email) {
+        log.info("Password reset request for email: {}", email);
+        Optional<User> userOpt = userRepository.findByEmail(email);
+
+        if (userOpt.isEmpty()) {
+            log.info("Password reset requested for non-existent email");
+            return;
+        }
+
+        User user = userOpt.get();
+        assignNewPasswordResetCode(user);
+        sendPasswordResetEmail(user);
+        userRepository.save(user);
+
+        log.info("Password reset code sent to user");
+    }
     // ----------------------------------------------------------------------------------------------------------------
     // Private helpers
     // ----------------------------------------------------------------------------------------------------------------
 
     private void assignNewVerificationCode(User user) {
-        user.setVerificationCode(generateVerificationCode());
+        user.setVerificationCode(generateCode());
         user.setVerificationCodeExpiresAt(LocalDateTime.now().plus(AppConstants.VERIFICATION_CODE_TTL));
     }
 
-    private String generateVerificationCode() {
+    private void assignNewPasswordResetCode(User user) {
+        user.setPasswordCode(generateCode());
+        user.setPasswordCodeExpiresAt(LocalDateTime.now().plus(AppConstants.PASSWORD_CODE_TTL));
+    }
+    private String generateCode() {
         int code = random.nextInt(AppConstants.VERIFICATION_CODE_RANGE) + AppConstants.VERIFICATION_CODE_MIN;
         return String.valueOf(code);
     }
 
+    private void sendPasswordResetEmail(User user) {
+        String htmlMessage = buildPasswordResetBody(user);
+
+        notificationService.send(
+                user.getEmail(),
+                "Password Reset",
+                htmlMessage,
+                "password reset email"
+        );
+    }
     private void sendVerificationEmail(User user) {
-        String subject = "Account verification";
+
         String htmlMessage = buildVerificationEmailBody(user);
 
         notificationService.send(
@@ -180,7 +233,38 @@ public class AuthenticationService {
                 "verification email"
         );
     }
-
+    private String buildPasswordResetBody(User user) {
+        return """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8" />
+                <title>Reset your TutorLink password</title>
+                <style>
+                    body { font-family: Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 0; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 24px; }
+                    .card { background-color: #ffffff; padding: 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+                    h1 { font-size: 20px; margin-bottom: 16px; color: #222222; }
+                    p { font-size: 14px; color: #444444; line-height: 1.5; }
+                    .code { display: inline-block; margin: 16px 0; padding: 12px 20px; font-size: 20px; letter-spacing: 4px; font-weight: bold; border-radius: 6px; background-color: #eef3ff; color: #2b3a67; }
+                    .footer { margin-top: 16px; font-size: 12px; color: #777777; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="card">
+                        <h1>Reset your TutorLink password</h1>
+                        <p>Hi %s,</p>
+                        <p>We received a request to reset the password for your <strong>TutorLink</strong> account. Enter the code below in the app to set a new password.</p>
+                        <div class="code">%s</div>
+                        <p>This code will expire in 15 minutes. If you didn't request a password reset, you can safely ignore this email — your password won't be changed.</p>
+                        <p class="footer">— The TutorLink Team</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(user.getDisplayUsername(), user.getPasswordCode());
+    }
     private String buildVerificationEmailBody(User user) {
         return """
             <!DOCTYPE html>
