@@ -1,279 +1,158 @@
 # TutorLink Backend
 
-## Technology Stack
+Spring Boot REST API powering [TutorLink](https://tutorlink.dev), a peer tutoring platform for University of Queensland students. Handles authentication, tutor profiles, course search, bookings, reviews, and image storage.
+ 
+**Live:** https://tutorlink.dev · **Frontend:** [TutorLinkFrontEnd](https://github.com/jameswilmiller/TutorLinkFrontEnd)
+ 
+> TutorLink is an independent personal project and is not affiliated with, endorsed by, or connected to the University of Queensland.
+> 
+## Overview
+ 
+Students search for tutors by course code, faculty, lesson mode, or proximity, then request bookings for online or in-person sessions. Tutors manage a public profile — bio, hourly rate, courses, credentials, teaching styles, languages — and accept, decline, complete, or cancel incoming bookings. Completed bookings unlock a one-time student review, which feeds each tutor's aggregate rating.
+ 
+- 120+ seeded UQ courses across all five faculties
+- JWT authentication with email verification and refresh-token rotation
+- Private S3 image storage served via presigned URLs
+- Full booking lifecycle with state-based permissions
+  
+## Architecture
+ 
+```mermaid
+flowchart LR
+    FE[React SPA] -->|HTTPS| NG[nginx]
+    NG -->|/api/*| API[Spring Boot API]
+    API --> DB[(PostgreSQL / RDS)]
+    API --> S3[(S3 — private bucket)]
+    API --> MAIL[SMTP email]
+```
+ 
+The API is stateless and containerised; nginx terminates TLS and routes traffic. The system is a deliberate monolith — the domain size doesn't justify distributed complexity, and a single deployable unit keeps debugging and iteration fast. Packages are separated by feature, so individual domains could be extracted later if ever warranted.
+ 
+Full topology, request lifecycle, and auth flow: [`docs/architecture.md`](docs/architecture.md).
 
-| Component                       | Version |
-|--------------------------------|---------|
-| Java                           | 25      |
-| Spring Boot                    | 4.0.0   |
-| Spring Dependency Management   | 1.1.7   |
-| Gradle                         | 9.2.1 |
-| PostgreSQL Driver              | Managed by Spring Boot |
-| JJWT                           | 0.13.0  |
-| Lombok                         | Managed by Spring Boot |
-
-## Key Dependencies
-
-- `org.springframework.boot:spring-boot-starter-data-jpa`
-- `org.springframework.boot:spring-boot-starter-security`
-- `org.springframework.boot:spring-boot-starter-webmvc`
-- `org.springframework.boot:spring-boot-starter-mail`
-- `org.postgresql:postgresql`
-- `io.jsonwebtoken:jjwt-api:0.13.0`
-- `io.jsonwebtoken:jjwt-impl:0.13.0`
-- `io.jsonwebtoken:jjwt-jackson:0.13.0`
-- `org.projectlombok:lombok`
-
-Most dependency versions are managed through Spring Boot’s dependency management to ensure compatibility across the application stack.
+## Tech Stack
+ 
+| Component | Choice |
+| --- | --- |
+| Language | Java 25 |
+| Framework | Spring Boot 4 (Web MVC, Data JPA, Security, Validation, Mail) |
+| Build | Gradle |
+| Database | PostgreSQL |
+| Auth | JJWT — access + refresh token pattern, BCrypt hashing |
+| Storage | AWS S3 (AWS SDK v2), Apache Tika for upload validation |
+| Testing | JUnit 5, Spring Boot Test, Testcontainers |
+| CI/CD | GitHub Actions → Docker Hub → AWS EC2 |
+| Infra | Docker, nginx, AWS RDS, Let's Encrypt |
 
 ## Project Structure
-
+ 
+Packages are organised by feature rather than by layer — each domain owns its controller, service, repository, DTOs, and mapper.
+ 
 ```text
-src/main/java/com/tl/
-├── config/         # Application and security configuration
-├── controller/     # REST controllers
-├── dto/            # Request and response DTOs
-├── model/          # Domain entities
-├── repository/     # Data access layer
-├── security/       # JWT handling, filters, authentication
-├── service/        # Business logic
-└── Application.java
-
-src/main/resources/
-├── application.properties
-└── ...
+src/main/java/com/tl/tutor_link/
+├── auth/           registration, login, JWT, refresh tokens, email verification
+├── user/           user accounts and roles
+├── tutor/          profiles, search, courses, enquiries
+├── booking/        booking lifecycle and state transitions
+├── review/         reviews and rating aggregates
+├── image/          S3 upload, validation, presigned URLs
+├── notification/   outbound email
+└── common/         config, constants, exception handling
 ```
-## Architecture
-The backend follows a layered architecture:
-
-- Controllers handle HTTP requests and responses
-- Services implement business logic
-- Repositories manage persistence
-- Security components handle authentication and authorisation
-
-This structure improves maintainability and isolates concerns across the application.
-
-## Architectural Style
-
-The system is implemented with a monolithic architecture
-
-This approach was selected because:
-
-- the current domain size does not justify distributed system complexity
-- development speed is prioritised during early stages
-- a single deployable unit simplifies debugging and iteration
-
-The codebase maintains logical separation between domains, allowing future migration to microservices if required.
-
-## Authentication and Session Management
-The backend uses a dual-token authentication model consisting of short-lived access tokens and longer-lived refresh tokens.
-
-### Access Tokens
-- Issued after successful authentication
-- Used to authorise API requests
-- Sent in the Authorization header
-```Authorization: Bearer <access_token>```
-
-### Refresh Tokens
-- Used to obtain new access tokens without requiring re-authentication
-- Support session continuity while limiting access token lifetime
-- Form part of the backend session renewal flow
-
-### Sessions Strategy
-This approach balances security and usability:
-- short-lived access tokens reduce the impact of token compromise
-- refresh tokens allow sessions to persist without frequent login
-- request handling remains stateless
 
 ## API Overview
+ 
+Resources are grouped by domain; all mutating endpoints require a bearer token.
+ 
+| Group | Covers |
+| --- | --- |
+| `/auth` | signup, login, email verification, resend code, token refresh |
+| `/users` | current user, become-tutor role upgrade |
+| `/tutors` | paginated search with filters, profile by slug, own-profile CRUD, enquiries |
+| `/courses` | course search for autocomplete |
+| `/bookings` | create, accept, decline, complete, cancel, meeting details |
+| `/reviews` | create review for a completed booking, list own reviews |
+| `/upload` | profile image upload |
+ 
+Request/response shapes, error envelope, and pagination conventions: [`docs/api.md`](docs/api.md).
 
-### Authentication
-- POST /auth/signup
-- POST /auth/login
-- POST /auth/verify
-- POST /auth/resend
-- POST /auth/refresh
-### Users
-- GET /users/me
-- POST /users/me/become-tutor
-### Tutors
-- GET /tutors
-- GET /tutors/{id}
-- GET /tutors/me/profile
-- POST /tutors/me/profile
-Detailed request and response formats shall be stored in the tutorlink docs repository
-
-## Data Model Summary
-The application uses a relational data model implemented with JPA entities.
-
-### User
-
-Represents an authenticated user of the platform.
-
-| Field                         | Type            | Description |
-|------------------------------|----------------|------------|
-| id                           | long           | Primary key |
-| firstname                    | String         | User first name |
-| lastname                     | String         | User last name |
-| username                     | String         | Public display username (unique) |
-| email                        | String         | Login identifier (unique) |
-| password                     | String         | Hashed password |
-| enabled                      | boolean        | Indicates whether the account is verified |
-| verificationCode             | String         | Email verification code |
-| verificationCodeExpiresAt    | LocalDateTime  | Verification expiry timestamp |
-| roles                        | Set<Role>      | Assigned roles (e.g. STUDENT, TUTOR, ADMIN) |
-
-#### Notes
-
-- The system authenticates users using their **email address**, not their username  
-- Roles are stored as an element collection and eagerly loaded  
-- The `enabled` flag is used to enforce email verification before access  
-
-### Tutor
-
-Represents tutor-specific profile information associated with a user.
-
-| Field            | Type     | Description |
-|------------------|----------|------------|
-| id               | Long     | Primary key |
-| user             | User     | Associated user (one-to-one) |
-| bio              | String   | Tutor description |
-| subjects         | String   | Subjects offered |
-| location         | String   | Human-readable location |
-| remote           | boolean  | Indicates remote availability |
-| hourlyRate       | Integer  | Hourly rate |
-| profileImageKey  | String   | Reference to stored profile image |
-| latitude         | Double   | Geographic latitude |
-| longitude        | Double   | Geographic longitude |
-
-#### Notes
-
-- Each tutor is linked to exactly one user via a **one-to-one relationship**  
-- The `user_id` column is unique, ensuring a user can only have one tutor profile  
-- Location is stored both as a string (display) and coordinates (map integration)  
-
-### RefreshToken
-
-Represents a persisted refresh token used for session renewal.
-
-| Field      | Type          | Description |
-|------------|---------------|-------------|
-| id         | Long          | Primary key |
-| token      | String        | Refresh token value |
-| user       | User          | Associated user |
-| revoked    | boolean       | Indicates whether the token has been invalidated |
-| expiresAt  | LocalDateTime | Refresh token expiry timestamp |
-
-#### Notes
-
-- Refresh tokens are persisted to support session renewal and token revocation  
-- Multiple refresh tokens may exist for a single user, allowing multiple active sessions across devices or browsers  
-- Access tokens are not persisted and remain stateless
-  
-### Relationships
-
-- User -> Tutor: One-to-one  
-- User -> roles: One-to-many (via element collection)  
-- User -> RefreshToken = one-to-many
-
-## Configuration
-Application configuration is managed via application.properties
-
-Configuration areas include:
-- database connectivity
-- JWT configuration
-- email service configuration
-- CORS settings
-Sensitive values should be externalised i.e in an env file and not committed to source control
-
+## Data Model
+ 
+Core entities: **User** (1–1) **Tutor**, which holds collections of courses (many-to-many), faculties, languages, teaching styles, and credentials. **Booking** links a student, a tutor, and a course through a status lifecycle (`PENDING → ACCEPTED/DECLINED → COMPLETED/CANCELLED`); a completed booking permits exactly one **Review**, whose scores are denormalised onto the tutor as aggregate rating fields. **RefreshToken** persists per-device sessions with revocation support.
+ 
+Full ERD and schema reasoning: [`docs/data-model.md`](docs/data-model.md).
+ 
 ## Local Development
-### pre-requisites
-ensure the following are installed
-
+ 
+### Prerequisites
+ 
 - Java 25
+- Docker 
 - Gradle
-- PostgreSQL
-
-Clone the repository:
-
+  
+### Setup
+ 
 ```bash
 git clone https://github.com/jameswilmiller/TutorLinkBackEnd.git
 cd TutorLinkBackEnd
-```
-### Database Configuration
-A PostgreSQL database must be available and reachable by the application before startup. Local and cloud-hosted deployments are both supported.
-
-update the following properties in  ```application.properties```:
-
-```
-spring.datasource.url=jdbc:postgresql://<host>:<port>/<database_name> 
-spring.datasource.username=your_username
-spring.datasource.password=your_password
-spring.jpa.hibernate.ddl-auto=update
-```
-
-### JWT Configuration
-JWT properties are required for authentication and token generation
-```
-security.jwt.secret-key=your_secret_key
-security.jwt.expiration-time=3600000
-security.jwt.refresh-token-expiration=604800000
-```
-#### generating a secret key
-generate a secure random key:
-Linux / macOS:
-```bash
-openssl rand -base64 32
-```
-Windows
-```bash
-$bytes = New-Object byte[] 32
-[System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
-[Convert]::ToBase64String($bytes)
-```
-this key must remain private and should not be committed to source control
-
-### Email Service (SMTP)
-The backend uses SMTP to send account verification emails
-
-GMail SMTP can be used via an App password
-```
-spring.mail.host=smtp.gmail.com
-spring.mail.port=587
-spring.mail.username=your_email@gmail.com
-spring.mail.password=your_app_password
-spring.mail.properties.mail.smtp.auth=true
-spring.mail.properties.mail.smtp.starttls.enable=true
-```
-#### GMail setup
-To use GMail as the SMTP provider
-- enable 2-step verification on the google account
-- generate an App password
-- use the app password as spring.mail.password
-A standard Gmail account password will not work
-
-### CORS Configuration
-The backend must allow requests from the frontend origin.
-
-CORS configuration is defined within the security configuration and controlled via application properties.
-
-Example:
-```properties
-app.cors.allowed-origins=https://frontendorigin.com or http://localhost:5173 for local development
-```
-
-### Running the Application
-start the backend using:
-```
+cp .env.example .env    # fill in the values below
 ./gradlew bootRun
 ```
-the API will be available at:
+ 
+The API starts at `http://localhost:8080`. On first run against an empty database, Hibernate creates the schema and the seeder populates the course catalogue and demo tutors.
+ 
+To run the full product, start the [frontend](https://github.com/jameswilmiller/TutorLinkFrontEnd) as well — its README covers setup, and the backend's CORS config must allow `http://localhost:5173` (it does by default in the dev profile).
 
-```http://localhost:8080```
-
-To test full functionality of TutorLink navigate to https://github.com/jameswilmiller/TutorLinkFrontEnd/blob/main/README.md and follow setup instructions 
-
-## Author 
-James Miller
-
-For questions or collaboration, contact: jameswil.miller@gmail.com
+### Environment variables
+ 
+| Variable | Purpose |
+| --- | --- |
+| `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | PostgreSQL connection |
+| `JWT_SECRET` | Token signing key — generate with `openssl rand -base64 32` |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_S3_BUCKET_NAME` | S3 profile image storage |
+| `MAIL_USERNAME` / `MAIL_PASSWORD` | SMTP for verification and enquiry emails. Gmail works with an App Password (requires 2FA; a normal account password will not work) |
+ 
+Token lifetimes and CORS origins are configured in `application.properties`. Local development uses `ddl-auto: update`; production uses `validate` so Hibernate never mutates the deployed schema.
+ 
+### Testing
+ 
+```bash
+./gradlew test
+```
+ 
+Integration tests run against a real PostgreSQL container via Testcontainers rather than an in-memory database, so queries, constraints, and native SQL are exercised on the same engine used in production.
+ 
+## Notable Implementation Details
+ 
+**Image upload pipeline.** Uploads pass a three-stage chain before reaching S3: declared size and content-type checks, true content-type detection with Apache Tika (a renamed `.exe` is rejected regardless of extension), then a full decode and re-encode to a clean JPEG. Re-encoding strips EXIF metadata and any embedded payload, the stored bytes are bytes this service generated. Each upload gets a fresh UUID key, and the previous object is deleted only after the database write succeeds.
+ 
+**Private image storage.** The S3 bucket blocks all public access. Images are returned as short-lived presigned GET URLs generated per response, so image access follows the same authorisation path as the rest of the API instead of relying on unguessable URLs.
+ 
+**Dynamic search.** Tutor search composes JPA Specifications, so course code, faculty, location, and lesson mode combine in any subset without a combinatorial explosion of repository methods. Proximity filtering runs as a native query returning matching IDs, folded back into the same Specification chain.
+ 
+**Denormalised rating aggregates.** Tutors carry `reviewCount` and `averageRating` alongside the review table. Search results paginate and sort by rating; computing averages per row per page would cost an aggregate query each, so the counters update transactionally when a review is written.
+ 
+**Refresh-token sessions.** Access tokens are short-lived and stateless; refresh tokens are persisted per device with revocation support, so a stolen access token expires quickly and a compromised session can be killed server-side without invalidating the user's other devices.
+ 
+**Deploy and rollback.** Every image is tagged with both `latest` and the commit SHA, so rolling back is a tag change and a container restart rather than a revert-and-rebuild cycle.
+ 
+## Deployment
+ 
+Pushes to `main` trigger tests, a Docker image build, a push to Docker Hub, and a deploy to AWS EC2, where nginx terminates TLS and proxies `/api/*` to the container. The database is AWS RDS in a private subnet, reachable only from the application host.
+ 
+## Known Limitations
+ 
+- Tutor credentials are self-reported; there is no formal verification step
+- Payment happens off-platform, arranged directly between student and tutor
+- Schema migrations rely on Hibernate (`validate` in production); Flyway is planned
+- No admin dashboard — moderation is manual
+- current SMTP setup can only handle up to 500 recipients per day, limited by gmail.
+  
+## Documentation
+ 
+Architecture, data model, API conventions, and design decision records: [`docs/`](docs/).
+ 
+## Author
+ 
+James Miller — [jameswil.miller@gmail.com](mailto:jameswil.miller@gmail.com)
+ 
