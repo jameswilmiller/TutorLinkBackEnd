@@ -11,7 +11,9 @@ import com.tl.tutor_link.tutor.mapper.TutorMapper;
 import com.tl.tutor_link.tutor.model.Tutor;
 import com.tl.tutor_link.tutor.repository.CourseRepository;
 import com.tl.tutor_link.tutor.repository.TutorRepository;
+import com.tl.tutor_link.user.model.Role;
 import com.tl.tutor_link.user.model.User;
+import com.tl.tutor_link.user.service.UserService;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,6 +51,9 @@ class TutorServiceTest {
 
     @Mock
     private NotificationService notificationService;
+
+    @Mock
+    private UserService userService;
 
     @InjectMocks
     private TutorService tutorService;
@@ -88,6 +93,9 @@ class TutorServiceTest {
         when(tutorRepository.findByUser(user))
                 .thenReturn(Optional.empty());
 
+        when(userService.addTutorRole(user))
+                .thenReturn(user);
+
         when(tutorRepository.save(any(Tutor.class)))
                 .thenReturn(savedTutor);
 
@@ -112,6 +120,61 @@ class TutorServiceTest {
         assertThat(tutorToSave.isRemote()).isTrue();
 
         assertThat(result).isSameAs(expectedDto);
+    }
+
+    @Test
+    void createTutorProfile_whenUserIsStillAStudent_grantsTutorRoleInTheSameCall() {
+
+        // A student creating their first profile must come out of this call
+        // holding TUTOR. Granting the role in a separate request used to leave
+        // the two out of step whenever the second call failed, stranding the
+        // user with a role but no profile.
+
+        // Arrange
+        User student = TestDataFactory.studentUser();
+        TutorProfileRequestDto request = TestDataFactory.tutorProfileRequest();
+
+        Tutor savedTutor = TestDataFactory.tutor(student);
+
+        when(tutorRepository.findByUser(student))
+                .thenReturn(Optional.empty());
+
+        when(userService.addTutorRole(student))
+                .thenAnswer(invocation -> {
+                    User u = invocation.getArgument(0);
+                    u.getRoles().add(Role.TUTOR);
+                    return u;
+                });
+
+        when(tutorRepository.save(any(Tutor.class)))
+                .thenReturn(savedTutor);
+
+        when(tutorMapper.toDto(savedTutor))
+                .thenReturn(new TutorProfileDto());
+
+        // Act
+        tutorService.createTutorProfile(student, request);
+
+        // Assert
+        verify(userService).addTutorRole(student);
+        assertThat(student.getRoles()).contains(Role.TUTOR);
+    }
+
+    @Test
+    void createTutorProfile_whenProfileAlreadyExists_doesNotGrantTutorRole() {
+
+        // Arrange
+        User user = TestDataFactory.tutorUser();
+        Tutor existingTutor = TestDataFactory.tutor(user);
+
+        when(tutorRepository.findByUser(user))
+                .thenReturn(Optional.of(existingTutor));
+
+        // Act + Assert
+        assertThatThrownBy(() -> tutorService.createTutorProfile(user, null))
+                .isInstanceOf(ConflictException.class);
+
+        verify(userService, never()).addTutorRole(any(User.class));
     }
 
     // ----------------------------------------------------------------------------------------------------------------
