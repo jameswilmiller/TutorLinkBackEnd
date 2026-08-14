@@ -3,6 +3,7 @@ package com.tl.tutor_link.common.security;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -56,6 +57,10 @@ public class SecurityConfiguration {
                         .requestMatchers("/tutors", "/tutors/*", "/tutors/search").permitAll()
 
                         .requestMatchers("/health").permitAll()
+
+
+                        .requestMatchers(HttpMethod.POST, "/tutors/me/profile")
+                        .hasAnyRole("STUDENT", "TUTOR", "ADMIN")
 
                         // Tutor-only endpoints (managing their own profile)
                         .requestMatchers("/tutors/me/**").hasRole("TUTOR")

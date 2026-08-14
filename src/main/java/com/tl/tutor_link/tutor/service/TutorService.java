@@ -17,6 +17,7 @@ import com.tl.tutor_link.tutor.repository.CourseRepository;
 import com.tl.tutor_link.tutor.repository.TutorRepository;
 import com.tl.tutor_link.tutor.repository.TutorSpecifications;
 import com.tl.tutor_link.user.model.User;
+import com.tl.tutor_link.user.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -48,18 +49,21 @@ public class TutorService {
     private final CourseRepository courseRepository;
     private final ImageUploadService imageUploadService;
     private final NotificationService notificationService;
+    private final UserService userService;
 
     public TutorService(TutorRepository tutorRepository,
                         TutorMapper tutorMapper,
                         CourseRepository courseRepository,
                         ImageUploadService imageUploadService,
-                        NotificationService notificationService
+                        NotificationService notificationService,
+                        UserService userService
                         ) {
         this.tutorRepository = tutorRepository;
         this.tutorMapper = tutorMapper;
         this.courseRepository = courseRepository;
         this.imageUploadService = imageUploadService;
         this.notificationService = notificationService;
+        this.userService = userService;
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -75,9 +79,10 @@ public class TutorService {
             throw new ConflictException("Tutor profile already exists for this user");
         }
 
+        User tutorUser = userService.addTutorRole(user);
         Tutor tutor = new Tutor();
-        tutor.setUser(user);
-        tutor.setSlug(generateUniqueSlug(user));
+        tutor.setUser(tutorUser);
+        tutor.setSlug(generateUniqueSlug(tutorUser));
         applyProfileUpdates(tutor, dto);
 
         Tutor savedTutor = tutorRepository.save(tutor);
