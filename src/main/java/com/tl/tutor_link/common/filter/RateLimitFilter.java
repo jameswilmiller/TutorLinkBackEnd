@@ -13,13 +13,17 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
 
+    private static final Set<String> SESSION_PATHS = Set.of("/auth/refresh", "/auth/logout");
+
     private final Map<String, Bucket> enquiryBuckets = new ConcurrentHashMap<>();
     private final Map<String, Bucket> authBuckets = new ConcurrentHashMap<>();
+    private final Map<String, Bucket> sessionBuckets = new ConcurrentHashMap<>();
     private final Map<String, Bucket> uploadBuckets = new ConcurrentHashMap<>();
     private final Map<String, Bucket> generalBuckets = new ConcurrentHashMap<>();
 
@@ -39,6 +43,16 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 .addLimit(Bandwidth.builder()
                         .capacity(10)
                         .refillIntervally(10, Duration.ofMinutes(15))
+                        .build())
+                .build();
+    }
+
+    // 120 session refreshes per 15 minutes
+    private Bucket newSessionBucket() {
+        return Bucket.builder()
+                .addLimit(Bandwidth.builder()
+                        .capacity(120)
+                        .refillIntervally(120, Duration.ofMinutes(15))
                         .build())
                 .build();
     }
@@ -74,6 +88,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         if (path.matches("/tutors/\\d+/enquire")) {
             bucket = enquiryBuckets.computeIfAbsent(key, k -> newEnquiryBucket());
+        } else if (SESSION_PATHS.contains(path)) {
+            bucket = sessionBuckets.computeIfAbsent(key, k -> newSessionBucket());
         } else if (path.startsWith("/auth/")) {
             bucket = authBuckets.computeIfAbsent(key, k -> newAuthBucket());
         } else if (path.startsWith("/upload/")) {

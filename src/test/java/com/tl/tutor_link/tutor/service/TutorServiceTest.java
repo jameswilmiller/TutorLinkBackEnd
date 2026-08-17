@@ -125,11 +125,6 @@ class TutorServiceTest {
     @Test
     void createTutorProfile_whenUserIsStillAStudent_grantsTutorRoleInTheSameCall() {
 
-        // A student creating their first profile must come out of this call
-        // holding TUTOR. Granting the role in a separate request used to leave
-        // the two out of step whenever the second call failed, stranding the
-        // user with a role but no profile.
-
         // Arrange
         User student = TestDataFactory.studentUser();
         TutorProfileRequestDto request = TestDataFactory.tutorProfileRequest();
