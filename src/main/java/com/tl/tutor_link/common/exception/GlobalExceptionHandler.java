@@ -91,13 +91,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
     }
 
-    /**
-     * Handles JWT parsing/validation failures surfaced by JwtAuthenticationFilter.
-     * An expired or malformed token is a normal client condition, not a server
-     * fault, so it returns 401 and is logged at WARN without being sent to Sentry.
-     * Without this the generic handler below would turn it into a 500, which
-     * hides the fact that the client only needs to refresh its access token.
-     */
     @ExceptionHandler(JwtException.class)
     public ResponseEntity<ErrorResponse> handleJwt(JwtException ex, HttpServletRequest request) {
         boolean expired = ex instanceof ExpiredJwtException;
