@@ -22,11 +22,6 @@ public class AppConstants {
     public static final double MAX_SEARCH_DISTANCE_KM = 20.0;
     public static final int DEFAULT_PAGE_SIZE = 20;
 
-    // Availability
-    public static final int SLOT_INCREMENT_MINUTES = 30;
-    public static final int MAX_BOOKING_DURATION_MINUTES = 240;
-    public static final int MAX_AVAILABILITY_RANGE_DAYS = 62;
-
     // Verification
     public static final Duration VERIFICATION_CODE_TTL = Duration.ofMinutes(15);
     public static final int VERIFICATION_CODE_MIN = 100000;
