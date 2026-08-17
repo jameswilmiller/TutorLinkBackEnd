@@ -1,6 +1,5 @@
 package com.tl.tutor_link.booking.service;
 
-import com.tl.tutor_link.availability.service.AvailabilityService;
 import com.tl.tutor_link.booking.dto.BookingDto;
 import com.tl.tutor_link.booking.dto.BookingRequestDto;
 import com.tl.tutor_link.booking.mapper.BookingMapper;
@@ -39,22 +38,19 @@ public class BookingService {
     private final CourseRepository courseRepository;
     private final BookingMapper bookingMapper;
     private final NotificationService notificationService;
-    private final AvailabilityService availabilityService;
 
     public BookingService(
             BookingRepository bookingRepository,
             TutorRepository tutorRepository,
             CourseRepository courseRepository,
             BookingMapper bookingMapper,
-            NotificationService notificationService,
-            AvailabilityService availabilityService
+            NotificationService notificationService
     ) {
         this.bookingRepository = bookingRepository;
         this.tutorRepository = tutorRepository;
         this.courseRepository = courseRepository;
         this.bookingMapper = bookingMapper;
         this.notificationService = notificationService;
-        this.availabilityService = availabilityService;
     }
 
     /**
@@ -90,8 +86,6 @@ public class BookingService {
         if (tutor.getUser().getId().equals(student.getId())) {
             throw new BadRequestException("You cannot book a session with yourself");
         }
-
-        availabilityService.assertBookable(tutor, dto.getScheduledAt(), dto.getDurationMinutes());
 
         Booking booking = new Booking();
         booking.setTutor(tutor);
