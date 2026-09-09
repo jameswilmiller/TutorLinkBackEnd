@@ -26,7 +26,7 @@ flowchart LR
     API --> MAIL[SMTP email]
 ```
  
-The API is stateless and containerised; nginx terminates TLS and routes traffic. The system is a deliberate monolith — the domain size doesn't justify distributed complexity, and a single deployable unit keeps debugging and iteration fast. Packages are separated by feature, so individual domains could be extracted later if ever warranted.
+The API is stateless and containerised; nginx terminates TLS and routes traffic. The system is a deliberate monolith. The domain size doesn't justify distributed complexity, and a single deployable unit keeps debugging and iteration simple. Packages are separated by feature, so individual domains could be extracted later if ever warranted.
  
 Full topology, request lifecycle, and auth flow: [`docs/architecture.md`](docs/architecture.md).
 
@@ -46,7 +46,7 @@ Full topology, request lifecycle, and auth flow: [`docs/architecture.md`](docs/a
 
 ## Project Structure
  
-Packages are organised by feature rather than by layer — each domain owns its controller, service, repository, DTOs, and mapper.
+Packages are organised by feature rather than by layer, each domain owns its controller, service, repository, DTOs, and mapper.
  
 ```text
 src/main/java/com/tl/tutor_link/
@@ -78,7 +78,7 @@ Request/response shapes, error envelope, and pagination conventions: [`docs/api.
 
 ## Data Model
  
-Core entities: **User** (1–1) **Tutor**, which holds collections of courses (many-to-many), faculties, languages, teaching styles, and credentials. **Booking** links a student, a tutor, and a course through a status lifecycle (`PENDING → ACCEPTED/DECLINED → COMPLETED/CANCELLED`); a completed booking permits exactly one **Review**, whose scores are denormalised onto the tutor as aggregate rating fields. **RefreshToken** persists per-device sessions with revocation support.
+Core entities: **User** (1–1) **Tutor**, which holds collections of courses (many-to-many), faculties, languages, teaching styles, and credentials. **Booking** links a student, a tutor, and a course through a status lifecycle (`PENDING -> ACCEPTED/DECLINED -> COMPLETED/CANCELLED`); a completed booking permits exactly one **Review**, whose scores are denormalised onto the tutor as aggregate rating fields. **RefreshToken** persists per-device sessions with revocation support.
  
 Full ERD and schema reasoning: [`docs/data-model.md`](docs/data-model.md).
  
